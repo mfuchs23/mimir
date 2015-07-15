@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+### Copyright (C) 2001-2012 Michael Fuchs ###
+-->
+<project name="mimir" default="build">
+
+  <property file="module.properties" />
+  <import file="../build/build.config/defaultBuild.xml"/>  
+</project>
