@@ -85,6 +85,15 @@
                </graphic>
             </Button>
             <Separator orientation="VERTICAL" />
+            <Button mnemonicParsing="false" onAction="#onSearch">
+               <graphic>
+                  <ImageView fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@resources/icons/search_16.png" />
+                     </image>
+                  </ImageView>
+               </graphic>
+            </Button>
             <Button mnemonicParsing="false" onAction="#onQuit">
                <graphic>
                   <ImageView fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true">

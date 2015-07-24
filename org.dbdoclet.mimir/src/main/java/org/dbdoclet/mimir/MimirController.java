@@ -6,8 +6,13 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.OptionalInt;
 import java.util.ResourceBundle;
 import java.util.concurrent.Executors;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -33,10 +38,13 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 
+import org.apache.lucene.search.Query;
 import org.controlsfx.dialog.ProgressDialog;
 import org.dbdoclet.mimir.dialog.ErrorDialog;
 import org.dbdoclet.mimir.task.DuplicateReportTask;
 import org.dbdoclet.mimir.task.FilterTreeTask;
+import org.dbdoclet.mimir.task.LuceneFilterTreeTask;
+import org.dbdoclet.mimir.task.RegexFilterTreeTask;
 import org.dbdoclet.mimir.task.ScanArchiveTask;
 import org.dbdoclet.mimir.tree.ZipTreeCell;
 import org.dbdoclet.mimir.tree.ZipTreeValue;
@@ -85,14 +93,14 @@ public class MimirController implements Initializable {
 		this.resources = resources;
 
 		try {
-			
+
 			recentlyUsed.load(menuBar);
 			updateRecentlyUsedMenu();
-			
+
 		} catch (Throwable oops) {
 			oops.printStackTrace();
 		}
-		
+
 		archiveModel = new ArchiveModel(resources);
 		archivePath.textProperty().bind(archiveModel.pathProperty());
 
@@ -127,6 +135,27 @@ public class MimirController implements Initializable {
 		Executors.newSingleThreadExecutor().submit(duplicateReportTask);
 	}
 
+	@FXML
+	public void onSearch(ActionEvent event) {
+
+		try {
+
+			selectSearchTab(tabPane);
+
+			/*
+			 * SearchDialog dialog; dialog = new SearchDialog();
+			 * dialog.showAndWait();
+			 * 
+			 * if (dialog.isCanceled()) { return; }
+			 * 
+			 * String pattern = dialog.getPattern(); search(pattern);
+			 */
+		} catch (Exception e) {
+			new ExceptionHandler().showDialog(e);
+		}
+
+	}
+
 	/**
 	 * Benutzerereignis zum öffnen eines Archivs. Die Methode öffnet den Dialog
 	 * zu Dateiauswahl
@@ -139,22 +168,23 @@ public class MimirController implements Initializable {
 		try {
 
 			File file = null;
-			if (event.getSource()  instanceof MenuItem) {
+			if (event.getSource() instanceof MenuItem) {
 				MenuItem item = (MenuItem) event.getSource();
 				Object userData = item.getUserData();
 				if (userData instanceof Path) {
 					file = ((Path) userData).toFile();
 				}
 			}
-			
+
 			if (recentlyUsed.getMostRecentlyUsed() != null) {
-				fileChooser.setInitialDirectory(recentlyUsed.getMostRecentlyUsed().toFile().getParentFile());
+				fileChooser.setInitialDirectory(recentlyUsed
+						.getMostRecentlyUsed().toFile().getParentFile());
 			}
-			
+
 			if (file == null) {
 				file = fileChooser.showOpenDialog(stage);
 			}
-			
+
 			if (file != null) {
 
 				if (archiveModel.isZipFile(file) == false) {
@@ -174,7 +204,7 @@ public class MimirController implements Initializable {
 				archiveModel.setArchive(file);
 				recentlyUsed.setMostRecentlyUsed(file.toPath());
 				updateRecentlyUsedMenu();
-				
+
 				ScanArchiveTask scanArchiveTask = new ScanArchiveTask(
 						archiveModel);
 				scanArchiveTask.exceptionProperty().addListener(
@@ -241,13 +271,50 @@ public class MimirController implements Initializable {
 		removeOld.forEach(item -> menu.getItems().remove(item));
 
 		menu.getItems().add(new SeparatorMenuItem());
-		
+
 		recentlyUsed.getList().stream().forEach(path -> {
 			MenuItem item = new MenuItem(path.toString());
 			item.setUserData(path);
 			item.setOnAction(e -> onOpenArchive(e));
 			menu.getItems().add(item);
 		});
+	}
+
+	private Tab selectSearchTab(TabPane tabPane) {
+
+		Tab searchTab = null;
+
+		String tabTitle = resources.getString("key.search");
+		List<Tab> searchTabList = tabPane
+				.getTabs()
+				.stream()
+				.filter(tab -> tab.getText().equals(
+						tabTitle))
+				.collect(Collectors.toList());
+
+		if (searchTabList.size() > 1) {
+			searchTabList.stream()
+					.forEach(tab -> tabPane.getTabs().remove(tab));
+		}
+
+		int selectedIndex = 0;
+		
+		if (searchTabList.size() == 1) {
+			searchTab = searchTabList.get(0);
+			ObservableList<Tab> tabs = tabPane.getTabs();
+			OptionalInt hit = IntStream.range(0, tabs.size())
+					.filter(i -> tabs.get(i).getText().equals(tabTitle)).findFirst();
+			if (hit.isPresent()) {
+				selectedIndex = hit.getAsInt();
+			}
+			
+		} else {
+			searchTab = new Tab(tabTitle);
+			tabPane.getTabs().add(0, searchTab);
+		}
+
+		tabPane.getSelectionModel().select(selectedIndex);
+		return searchTab;
 	}
 
 	private Tab createTextTab(String name, String content) {
@@ -282,8 +349,8 @@ public class MimirController implements Initializable {
 
 		if (pattern.trim().length() > 0) {
 
-			FilterTreeTask filterTreeTask = new FilterTreeTask(pattern,
-					archiveModel);
+			FilterTreeTask filterTreeTask = new RegexFilterTreeTask(
+					Pattern.compile(pattern), archiveModel);
 			filterTreeTask.exceptionProperty().addListener(exceptionHandler);
 
 			ProgressDialog dialog = new ProgressDialog(filterTreeTask);
@@ -297,7 +364,7 @@ public class MimirController implements Initializable {
 		treeView.setRoot(treeRoot);
 		treeRoot.setExpanded(true);
 	}
-	
+
 	private void onTreeDoubleClick(MouseEvent event) {
 
 		if (event.getButton().equals(MouseButton.PRIMARY)
@@ -305,6 +372,10 @@ public class MimirController implements Initializable {
 
 			TreeItem<ZipTreeValue> selectedItem = treeView.getSelectionModel()
 					.getSelectedItem();
+
+			if (selectedItem == null) {
+				return;
+			}
 
 			ZipTreeValue value = selectedItem.getValue();
 			if (selectedItem == null || value == null
@@ -323,6 +394,42 @@ public class MimirController implements Initializable {
 	@FXML
 	void onChangeCursor(ActionEvent event) {
 		stage.getScene().setCursor(Cursor.HAND);
+	}
+
+	public void search(String text) {
+
+		TreeItem<ZipTreeValue> treeRoot = archiveModel.getTreeRoot();
+
+		if (treeRoot == null) {
+			return;
+		}
+
+		try {
+
+			if (text.trim().length() > 0 && text.equals("*") == false) {
+
+				Query query = archiveModel.createQuery("content", text);
+				LuceneFilterTreeTask filterTreeTask = new LuceneFilterTreeTask(
+						query, archiveModel);
+
+				filterTreeTask.exceptionProperty()
+						.addListener(exceptionHandler);
+
+				ProgressDialog dialog = new ProgressDialog(filterTreeTask);
+				dialog.setHeaderText(resources
+						.getString("key.archive_scanning"));
+				Executors.newSingleThreadExecutor().submit(filterTreeTask);
+				dialog.showAndWait();
+
+				treeRoot = filterTreeTask.getTreeRoot();
+			}
+
+			treeView.setRoot(treeRoot);
+			treeRoot.setExpanded(true);
+
+		} catch (Throwable oops) {
+			exceptionHandler.showDialog(oops);
+		}
 	}
 
 }

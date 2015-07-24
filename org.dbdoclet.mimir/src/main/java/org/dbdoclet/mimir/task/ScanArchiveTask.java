@@ -1,9 +1,9 @@
 package org.dbdoclet.mimir.task;
 
+import javafx.concurrent.Task;
+
 import org.dbdoclet.mimir.ArchiveModel;
 import org.dbdoclet.mimir.IVisitor;
-
-import javafx.concurrent.Task;
 
 public class ScanArchiveTask extends Task<Void> implements IVisitor<String>{
 

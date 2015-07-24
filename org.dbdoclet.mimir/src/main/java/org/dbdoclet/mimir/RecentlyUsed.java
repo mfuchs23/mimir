@@ -56,7 +56,12 @@ public class RecentlyUsed {
 		}
 		
 		try (BufferedReader reader = new BufferedReader(new FileReader(getFileName()))) {
-			reader.lines().forEach(line -> recentlyUsedList.add(Paths.get(line)));
+			reader.lines().forEach(line -> {
+				Path p = Paths.get(line);
+				if (p.toFile().exists()) {
+					recentlyUsedList.add(p);
+				}
+			});
 		}
 	}
 

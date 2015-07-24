@@ -5,9 +5,11 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.ResourceBundle;
 import java.util.Scanner;
-import java.util.TreeMap;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
@@ -18,42 +20,72 @@ import javafx.beans.property.StringProperty;
 import javafx.scene.control.TreeItem;
 import javafx.scene.image.ImageView;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.RAMDirectory;
 import org.dbdoclet.mimir.task.FilterTreeTask;
 import org.dbdoclet.mimir.tree.ZipTreeValue;
 
 public class ArchiveModel {
 
+	class ScanContext {
+		public IVisitor<String> visitor;
+		public InputStream inputStream;
+		public TreeItem<ZipTreeValue> treeParent;
+		public IndexWriter indexWriter;
+		public String container;
+	}
+	
 	private File archiveFile;
-	private TreeMap<String, ArrayList<TreeItem<ZipTreeValue>>> entryMap;
 	private IconManager iconManager;
 	private ArrayList<Scanner> openScannerList;
 	private ArrayList<InputStream> openStreamList;
+	private ArrayList<String> classpathList;
 	private StringProperty path = new SimpleStringProperty();
 	private ResourceBundle resources;
 	private TreeItem<ZipTreeValue> treeRoot;
+	private Directory directory = new RAMDirectory();
+	private Analyzer analyzer = new StandardAnalyzer();
 
 	public ArchiveModel(ResourceBundle resources) {
 		this.resources = resources;
 		iconManager = new IconManager();
-		entryMap = new TreeMap<>();
 		openStreamList = new ArrayList<>();
 		openScannerList = new ArrayList<>();
+		classpathList = new ArrayList<>();
 	}
 
 	public void clear() {
-		
+
 		archiveFile = null;
 		setPath(null);
 		treeRoot = null;
-		entryMap.clear();
+	}
+
+	public Query createQuery(String field, String text) throws ParseException {
+		
+		QueryParser queryParser = new QueryParser(field, analyzer);
+		return queryParser.parse(text);
 	}
 
 	public File getArchiveFile() {
 		return archiveFile;
 	}
 
-	public TreeMap<String, ArrayList<TreeItem<ZipTreeValue>>> getEntryMap() {
-		return entryMap;
+	public ArrayList<String> getClasspathList() {
+		return classpathList;
 	}
 
 	public String getPath() {
@@ -87,16 +119,26 @@ public class ArchiveModel {
 					resources.getString("key.archive_undefined"));
 		}
 
-		entryMap.clear();
 		openStreamList.clear();
 		openScannerList.clear();
 
+		ScanContext scanContext = new ScanContext();
+		IndexWriterConfig config = new IndexWriterConfig(analyzer);
+		scanContext.indexWriter = new IndexWriter(directory, config);
 		try (FileInputStream fis = new FileInputStream(archiveFile);) {
+			
 			treeRoot = new TreeItem<ZipTreeValue>(new ZipTreeValue(
 					archiveFile.getName()));
 			treeRoot.setGraphic(new ImageView(iconManager.getRootIcon()));
-			scanZip(visitor, fis, treeRoot);
+			
+			scanContext.inputStream = fis;
+			scanContext.treeParent = treeRoot;
+			scanContext.visitor = visitor;
+			scanContext.container = archiveFile.getName();
+			scanZip(scanContext);
 		}
+
+		scanContext.indexWriter.close();
 
 		openStreamList.forEach(is -> {
 			try {
@@ -131,14 +173,32 @@ public class ArchiveModel {
 		filterTreeTask.after(treeItem);
 	}
 
+	public List<Document> search(Query query) throws IOException, ParseException {
+
+		DirectoryReader ireader = DirectoryReader.open(directory);
+		IndexSearcher isearcher = new IndexSearcher(ireader);
+
+		ScoreDoc[] hits = isearcher.search(query, 1000).scoreDocs;
+		List<Document> docs = Arrays.stream(hits).map(scoreDoc -> { try {
+			return isearcher.doc(scoreDoc.doc);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		} }).collect(Collectors.toList());
+
+		ireader.close();
+		
+		return docs;
+	}
+
 	public void setArchive(File archiveFile) {
 		this.setArchiveFile(archiveFile);
 	}
 
 	public void setArchiveFile(File archiveFile) {
-		
+
 		this.archiveFile = archiveFile;
-		
+
 		if (archiveFile != null) {
 			setPath(archiveFile.getAbsolutePath());
 		} else {
@@ -148,6 +208,10 @@ public class ArchiveModel {
 
 	public void setPath(String value) {
 		path.set(value);
+	}
+
+	private void addClasspath(String classpath) {
+		classpathList.add(classpath);
 	}
 
 	private TreeItem<ZipTreeValue> findDirectoryNode(
@@ -191,18 +255,18 @@ public class ArchiveModel {
 	private String identifyCharset(String name) {
 
 		String charset = "UTF-8";
-		
+
 		if (name != null && name.toLowerCase().endsWith(".properties")) {
 			return "ISO-8859-1";
 		}
-		
+
 		return charset;
 	}
-	
-	private void scanZip(IVisitor<String> visitor, InputStream is,
-			TreeItem<ZipTreeValue> treeParent) throws IOException {
 
-		ZipInputStream zin = new ZipInputStream(is);
+	private void scanZip(ScanContext scanContext)
+			throws IOException {
+
+		ZipInputStream zin = new ZipInputStream(scanContext.inputStream);
 		openStreamList.add(zin);
 		ZipEntry entry = zin.getNextEntry();
 
@@ -212,18 +276,18 @@ public class ArchiveModel {
 			 * Eingebettete Zip-Dateien müssen auch als Verzeichnisse behandelt
 			 * werden.
 			 */
-			treeParent.getValue().isDirectory(true);
+			scanContext.treeParent.getValue().isDirectory(true);
 
 			String name = entry.getName();
 
-			visitor.accept(name);
+			scanContext.visitor.accept(name);
 
 			if (entry.isDirectory() == false) {
 
 				try {
 
 					TreeItem<ZipTreeValue> treeDirectory = findDirectoryNode(
-							treeParent, name);
+							scanContext.treeParent, name);
 
 					ZipTreeValue zipTreeValue = new ZipTreeValue(entry);
 					zipTreeValue.isDirectory(false);
@@ -234,7 +298,7 @@ public class ArchiveModel {
 
 					if (name.endsWith(".xml") || name.endsWith(".properties")
 							|| name.endsWith(".MF")) {
-						
+
 						Scanner sc = new Scanner(zin, identifyCharset(name));
 						openScannerList.add(sc);
 						StringBuilder buffer = new StringBuilder();
@@ -242,31 +306,33 @@ public class ArchiveModel {
 							buffer.append(sc.nextLine());
 							buffer.append("\n");
 						}
-						
+
 						zipTreeValue.setContent(buffer.toString());
 					}
 
-					ArrayList<TreeItem<ZipTreeValue>> entryList = entryMap
-							.get(name);
+					Document doc = new Document();
+					doc.add(new Field("name", name, TextField.TYPE_STORED));
+					doc.add(new Field("content", zipTreeValue.getContent(),
+							TextField.TYPE_STORED));
 
-					if (entryList == null) {
-						entryList = new ArrayList<>();
-						entryMap.put(name, entryList);
-					}
+					scanContext.indexWriter.addDocument(doc);
 
-					entryList.add(treeChild);
-
-					scanZip(visitor, zin, treeChild);
+					scanZip(scanContext);
 
 				} catch (ZipException oops) {
 					oops.printStackTrace();
 				}
-
+			
+			} else {
+				
+				if (name.endsWith(".war") || name.endsWith(".jar")) {
+					scanContext.container = name;
+					addClasspath(name);
+				}
 			}
 
 			zin.closeEntry();
 			entry = zin.getNextEntry();
 		}
 	}
-
 }

@@ -42,6 +42,11 @@ public class ZipTreeValue  {
 	}
 
 	public String getContent() {
+		
+		if (content == null) {
+			return "";
+		}
+		
 		return content;
 	}
 
@@ -49,6 +54,10 @@ public class ZipTreeValue  {
 		return name;
 	}
 
+	public String getFullyQualifiedName() {
+		return zipEntry.getName();
+	}
+	
 	public ZipEntry getZipEntry() {
 		return zipEntry;
 	}
