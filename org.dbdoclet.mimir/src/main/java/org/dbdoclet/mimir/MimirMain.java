@@ -3,11 +3,14 @@ package org.dbdoclet.mimir;
 import java.util.PropertyResourceBundle;
 
 import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.event.EventHandler;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+import javafx.stage.WindowEvent;
 
 /**
  * Mimir ist ein Werkzeug zur Analyse von Ear, War und Jar-Archive. Im
@@ -32,7 +35,7 @@ public class MimirMain extends Application {
 							.getBundle("org.dbdoclet.mimir.MimirResources"));
 	
 			Parent root = fxmlLoader.load();
-			MimirController controller = fxmlLoader.getController();
+			MainController controller = fxmlLoader.getController();
 			controller.setStage(primaryStage);
 			
 			Scene scene = new Scene(root, 1024, 768);
@@ -42,6 +45,13 @@ public class MimirMain extends Application {
 			
 			primaryStage.setScene(scene);
 			primaryStage.show();
+	
+			primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+				@Override    
+				public void handle(WindowEvent event) {
+					Platform.exit();
+				}
+			});
 
 		} catch (Exception e) {
 			e.printStackTrace();

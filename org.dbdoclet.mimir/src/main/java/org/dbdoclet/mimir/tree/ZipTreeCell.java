@@ -2,25 +2,14 @@ package org.dbdoclet.mimir.tree;
 
 import java.util.ResourceBundle;
 
-import javafx.event.ActionEvent;
-import javafx.scene.control.ContextMenu;
-import javafx.scene.control.MenuItem;
 import javafx.scene.control.TreeCell;
-
-import org.dbdoclet.mimir.ExceptionHandler;
-import org.dbdoclet.mimir.dialog.SearchDialog;
 
 public class ZipTreeCell extends TreeCell<ZipTreeValue> {
 
-	private final ContextMenu contextMenu = new ContextMenu();
+	private final TreeContextMenu contextMenu;
 
 	public ZipTreeCell(ResourceBundle resources) {
-
-		MenuItem addMenuItem = new MenuItem(resources.getString("key.search"));
-		contextMenu.getItems().add(addMenuItem);
-		addMenuItem.setOnAction((ActionEvent t) -> {
-			System.out.println("onAction");
-		});
+		contextMenu = new TreeContextMenu(resources);
 	}
 
 	@Override
@@ -34,6 +23,7 @@ public class ZipTreeCell extends TreeCell<ZipTreeValue> {
 		} else {
 			setText(item.toString());
 			setGraphic(getTreeItem().getGraphic());
+			contextMenu.setItem(item);
 			setContextMenu(contextMenu);
 		}
 	}

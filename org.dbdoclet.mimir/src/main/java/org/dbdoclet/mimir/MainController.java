@@ -7,18 +7,27 @@ import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Cursor;
+import javafx.scene.Node;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
@@ -28,6 +37,7 @@ import javafx.scene.control.TabPane;
 import javafx.scene.control.TabPane.TabClosingPolicy;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.ToolBar;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import javafx.scene.input.MouseButton;
@@ -35,6 +45,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.text.Font;
 import javafx.scene.web.WebView;
 import javafx.stage.FileChooser;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 
@@ -56,20 +67,24 @@ import org.dbdoclet.mimir.tree.ZipTreeValue;
  * 
  * @author fuchs
  */
-public class MimirController implements Initializable {
+public class MainController implements Initializable {
 
 	@FXML
 	private MenuBar menuBar;
+	@FXML
+	private ToolBar toolBar;
 	@FXML
 	private TabPane tabPane;
 	@FXML
 	private TreeView<ZipTreeValue> treeView;
 	@FXML
-	private TextField archivePath;
+	private TextField searchPattern;
 	@FXML
 	private TextField filterPattern;
 	@FXML
 	private WebView reportView;
+	@FXML
+	private Label archivePath;
 
 	private Stage stage;
 	private ArchiveModel archiveModel;
@@ -77,6 +92,7 @@ public class MimirController implements Initializable {
 	private FileChooser fileChooser = new FileChooser();
 	private RecentlyUsed recentlyUsed = new RecentlyUsed();
 	private ResourceBundle resources;
+	private MimirWatcher watcher;
 
 	// private URL location;
 
@@ -96,27 +112,44 @@ public class MimirController implements Initializable {
 
 			recentlyUsed.load(menuBar);
 			updateRecentlyUsedMenu();
+			watcher = new MimirWatcher(this);
+			watcher.start();
 
 		} catch (Throwable oops) {
-			oops.printStackTrace();
+			exceptionHandler.showDialog(oops);
 		}
 
 		archiveModel = new ArchiveModel(resources);
-		archivePath.textProperty().bind(archiveModel.pathProperty());
-
 		filterPattern.setOnAction(e -> onFilterChanged());
-
 		treeView.setCellFactory((TreeView<ZipTreeValue> p) -> new ZipTreeCell(
 				resources));
 		treeView.setOnMouseClicked(e -> onTreeDoubleClick(e));
+
+		if (recentlyUsed.getMostRecentlyUsed() != null) {
+			try {
+				openArchive(recentlyUsed.getMostRecentlyUsed().toFile());
+			} catch (IOException oops) {
+				exceptionHandler.showDialog(oops);
+			}
+		}
 	}
 
 	@FXML
+	public void onClearFilter(ActionEvent event) {
+		filterPattern.setText("");
+		onFilterChanged();
+	}
+	
+	@FXML
 	public void onCloseArchive(ActionEvent event) {
 
-		treeView.setRoot(null);
-		archiveModel.setArchive(null);
-		closeArchive();
+		try {
+			treeView.setRoot(null);
+			archiveModel.setArchive(null);
+			closeArchive();
+		} catch (IOException e) {
+			exceptionHandler.showDialog(e);
+		}
 	}
 
 	@FXML
@@ -133,27 +166,6 @@ public class MimirController implements Initializable {
 		stage.getScene().setCursor(Cursor.WAIT);
 		stage.getScene().getRoot().setDisable(true);
 		Executors.newSingleThreadExecutor().submit(duplicateReportTask);
-	}
-
-	@FXML
-	public void onSearch(ActionEvent event) {
-
-		try {
-
-			selectSearchTab(tabPane);
-
-			/*
-			 * SearchDialog dialog; dialog = new SearchDialog();
-			 * dialog.showAndWait();
-			 * 
-			 * if (dialog.isCanceled()) { return; }
-			 * 
-			 * String pattern = dialog.getPattern(); search(pattern);
-			 */
-		} catch (Exception e) {
-			new ExceptionHandler().showDialog(e);
-		}
-
 	}
 
 	/**
@@ -201,24 +213,7 @@ public class MimirController implements Initializable {
 				}
 
 				closeArchive();
-				archiveModel.setArchive(file);
-				recentlyUsed.setMostRecentlyUsed(file.toPath());
-				updateRecentlyUsedMenu();
-
-				ScanArchiveTask scanArchiveTask = new ScanArchiveTask(
-						archiveModel);
-				scanArchiveTask.exceptionProperty().addListener(
-						exceptionHandler);
-
-				ProgressDialog dialog = new ProgressDialog(scanArchiveTask);
-				dialog.setHeaderText(resources
-						.getString("key.archive_scanning"));
-				Executors.newSingleThreadExecutor().submit(scanArchiveTask);
-				dialog.showAndWait();
-
-				TreeItem<ZipTreeValue> treeRoot = archiveModel.getTreeRoot();
-				treeRoot.setExpanded(true);
-				treeView.setRoot(treeRoot);
+				openArchive(file);
 			}
 
 		} catch (Throwable oops) {
@@ -226,18 +221,117 @@ public class MimirController implements Initializable {
 		}
 	}
 
-	private void closeArchive() {
-		tabPane.getTabs().clear();
-	}
-
 	@FXML
 	public void onQuit(ActionEvent event) {
+
 		try {
+
 			recentlyUsed.save();
+
 		} catch (IOException oops) {
 			exceptionHandler.showDialog(oops);
 		}
+		
+		watcher.interrupt();
 		stage.close();
+		Platform.exit();
+	}
+
+	@FXML
+	public void onReloadArchive(final ActionEvent event) {
+		reload();
+	}
+
+	@FXML
+	public void onSearch(ActionEvent event) {
+
+		try {
+			if (archiveModel == null) {
+				return;
+			}
+
+			search(searchPattern.getText());
+
+		} catch (Exception e) {
+			new ExceptionHandler().showDialog(e);
+		}
+	}
+
+	@FXML
+	public void onSelectSearchTab(ActionEvent event) {
+
+		try {
+			selectSearchTab(tabPane);
+		} catch (Exception e) {
+			new ExceptionHandler().showDialog(e);
+		}
+	}
+
+	public void refresh() {
+
+		Alert alert = new Alert(AlertType.CONFIRMATION);
+		alert.setTitle(resources.getString("key.refresh_title"));
+		alert.setHeaderText(resources
+				.getString("key.refresh_header"));
+		alert.setContentText(MessageFormat.format(resources.getString("key.refresh_content"), archiveModel.getArchiveFile()
+				.getName()));
+
+		Optional<ButtonType> result = alert.showAndWait();
+		if (result.get() == ButtonType.OK) {
+			try {
+				openArchive(archiveModel.getArchiveFile());
+			} catch (IOException e) {
+				exceptionHandler.showDialog(e);
+			}
+		}
+	}
+
+	public void reload() {
+
+		try {
+			
+			openArchive(archiveModel.getArchiveFile());
+			watcher.register(archiveModel.getArchiveFile());
+			
+		} catch (IOException e) {
+			exceptionHandler.showDialog(e);
+		}
+	}
+
+	public void search(String text) {
+
+		TreeItem<ZipTreeValue> treeRoot = archiveModel.getTreeRoot();
+
+		if (treeRoot == null) {
+			return;
+		}
+
+		try {
+
+			if (text.trim().length() > 0 && text.equals("*") == false) {
+
+				Query query = archiveModel.createQuery("content", text);
+				LuceneFilterTreeTask filterTreeTask = new LuceneFilterTreeTask(
+						query, archiveModel);
+
+				filterTreeTask.exceptionProperty()
+						.addListener(exceptionHandler);
+
+				ProgressDialog dialog = new ProgressDialog(filterTreeTask);
+				dialog.setHeaderText(resources
+						.getString("key.archive_scanning"));
+				Executors.newSingleThreadExecutor().submit(filterTreeTask);
+				dialog.showAndWait();
+
+				treeRoot = filterTreeTask.getTreeRoot();
+			}
+
+			treeView.setRoot(treeRoot);
+			treeRoot.setExpanded(true);
+
+		} catch (Throwable oops) {
+			exceptionHandler.showDialog(oops);
+		}
 	}
 
 	public void setStage(Stage stage) {
@@ -280,41 +374,15 @@ public class MimirController implements Initializable {
 		});
 	}
 
-	private Tab selectSearchTab(TabPane tabPane) {
+	private void closeArchive() {
 
-		Tab searchTab = null;
-
-		String tabTitle = resources.getString("key.search");
-		List<Tab> searchTabList = tabPane
+		List<Tab> removeTabList = tabPane
 				.getTabs()
 				.stream()
-				.filter(tab -> tab.getText().equals(
-						tabTitle))
+				.filter(tab -> tab.getId() != null
+						&& tab.getId().startsWith("sys:") == false)
 				.collect(Collectors.toList());
-
-		if (searchTabList.size() > 1) {
-			searchTabList.stream()
-					.forEach(tab -> tabPane.getTabs().remove(tab));
-		}
-
-		int selectedIndex = 0;
-		
-		if (searchTabList.size() == 1) {
-			searchTab = searchTabList.get(0);
-			ObservableList<Tab> tabs = tabPane.getTabs();
-			OptionalInt hit = IntStream.range(0, tabs.size())
-					.filter(i -> tabs.get(i).getText().equals(tabTitle)).findFirst();
-			if (hit.isPresent()) {
-				selectedIndex = hit.getAsInt();
-			}
-			
-		} else {
-			searchTab = new Tab(tabTitle);
-			tabPane.getTabs().add(0, searchTab);
-		}
-
-		tabPane.getSelectionModel().select(selectedIndex);
-		return searchTab;
+		tabPane.getTabs().removeAll(removeTabList);
 	}
 
 	private Tab createTextTab(String name, String content) {
@@ -322,7 +390,7 @@ public class MimirController implements Initializable {
 		Tab tab = new Tab(name);
 		TextArea textPane = new TextArea();
 		textPane.setEditable(false);
-		textPane.setFont(Font.font("Courier New"));
+		textPane.setFont(Font.font("Lucida Sans Typewriter", 13.0));
 		textPane.setText(content);
 		tab.setContent(textPane);
 		return tab;
@@ -350,7 +418,7 @@ public class MimirController implements Initializable {
 		if (pattern.trim().length() > 0) {
 
 			FilterTreeTask filterTreeTask = new RegexFilterTreeTask(
-					Pattern.compile(pattern), archiveModel);
+					Pattern.compile("^.*" + pattern + ".*$"), archiveModel);
 			filterTreeTask.exceptionProperty().addListener(exceptionHandler);
 
 			ProgressDialog dialog = new ProgressDialog(filterTreeTask);
@@ -391,45 +459,85 @@ public class MimirController implements Initializable {
 		}
 	}
 
-	@FXML
-	void onChangeCursor(ActionEvent event) {
-		stage.getScene().setCursor(Cursor.HAND);
-	}
+	private void openArchive(File file) throws IOException {
 
-	public void search(String text) {
-
-		TreeItem<ZipTreeValue> treeRoot = archiveModel.getTreeRoot();
-
-		if (treeRoot == null) {
+		if (file == null) {
 			return;
 		}
 
-		try {
+		archiveModel.setArchive(file);
+		recentlyUsed.setMostRecentlyUsed(file.toPath());
+		updateRecentlyUsedMenu();
 
-			if (text.trim().length() > 0 && text.equals("*") == false) {
+		archivePath.setText(file.getCanonicalPath());
 
-				Query query = archiveModel.createQuery("content", text);
-				LuceneFilterTreeTask filterTreeTask = new LuceneFilterTreeTask(
-						query, archiveModel);
+		ScanArchiveTask scanArchiveTask = new ScanArchiveTask(archiveModel);
+		scanArchiveTask.exceptionProperty().addListener(exceptionHandler);
 
-				filterTreeTask.exceptionProperty()
-						.addListener(exceptionHandler);
+		ProgressDialog dialog = new ProgressDialog(scanArchiveTask);
+		dialog.setHeaderText(resources.getString("key.archive_scanning"));
+		Executors.newSingleThreadExecutor().submit(scanArchiveTask);
+		dialog.showAndWait();
 
-				ProgressDialog dialog = new ProgressDialog(filterTreeTask);
-				dialog.setHeaderText(resources
-						.getString("key.archive_scanning"));
-				Executors.newSingleThreadExecutor().submit(filterTreeTask);
-				dialog.showAndWait();
+		TreeItem<ZipTreeValue> treeRoot = archiveModel.getTreeRoot();
+		treeRoot.setExpanded(true);
+		treeView.setRoot(treeRoot);
 
-				treeRoot = filterTreeTask.getTreeRoot();
+		watcher.register(archiveModel.getArchiveFile());
+	}
+
+	private Tab selectSearchTab(TabPane tabPane) throws IOException {
+
+		Tab searchTab = null;
+
+		String tabTitle = resources.getString("key.search");
+		List<Tab> searchTabList = tabPane.getTabs().stream()
+				.filter(tab -> tab.getText().equals(tabTitle))
+				.collect(Collectors.toList());
+
+		if (searchTabList.size() > 1) {
+			searchTabList.stream()
+					.forEach(tab -> tabPane.getTabs().remove(tab));
+		}
+
+		int selectedIndex = 0;
+
+		if (searchTabList.size() == 1) {
+			searchTab = searchTabList.get(0);
+			ObservableList<Tab> tabs = tabPane.getTabs();
+			OptionalInt hit = IntStream.range(0, tabs.size())
+					.filter(i -> tabs.get(i).getText().equals(tabTitle))
+					.findFirst();
+			if (hit.isPresent()) {
+				selectedIndex = hit.getAsInt();
 			}
 
-			treeView.setRoot(treeRoot);
-			treeRoot.setExpanded(true);
+		} else {
+			searchTab = new Tab(tabTitle);
+			Stage dialog = new Stage();
 
-		} catch (Throwable oops) {
-			exceptionHandler.showDialog(oops);
+			dialog.initModality(Modality.WINDOW_MODAL);
+			dialog.initOwner(MimirMain.getMainWindow());
+
+			FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource(
+					"SearchDialog.fxml"),
+					PropertyResourceBundle
+							.getBundle("org.dbdoclet.mimir.MimirResources"));
+
+			Node scene = fxmlLoader.load();
+			searchTab.setContent(scene);
+			// SearchDialogController controller = fxmlLoader.getController();
+
+			tabPane.getTabs().add(0, searchTab);
 		}
+
+		tabPane.getSelectionModel().select(selectedIndex);
+		return searchTab;
+	}
+
+	@FXML
+	void onChangeCursor(ActionEvent event) {
+		stage.getScene().setCursor(Cursor.HAND);
 	}
 
 }

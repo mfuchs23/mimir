@@ -9,6 +9,7 @@ import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Optional;
 
 import javafx.scene.control.MenuBar;
 
@@ -67,10 +68,12 @@ public class RecentlyUsed {
 
 	public Path getMostRecentlyUsed() {
 
-		if (recentlyUsedList.size() > 0) {
-			return recentlyUsedList.get(0);
+		Optional<Path> result = recentlyUsedList.stream().filter(p -> p.toFile().exists()).findFirst();
+		
+		if (result.isPresent()) {
+			return result.get();
 		}
-
+		
 		return null;
 	}
 

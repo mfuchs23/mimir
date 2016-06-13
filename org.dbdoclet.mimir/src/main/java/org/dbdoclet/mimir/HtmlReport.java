@@ -8,9 +8,8 @@ import org.dbdoclet.mimir.tree.ZipTreeValue;
 
 public class HtmlReport {
 
-	private static final String SUFFIX_CLASS = ".class";
 
-	private ArchiveModel archiveModel;
+	protected ArchiveModel archiveModel;
 
 	public HtmlReport(ArchiveModel archiveModel) {
 		this.archiveModel = archiveModel;
@@ -22,7 +21,7 @@ public class HtmlReport {
 		return report;
 	}
 
-	private String createFqName(TreeItem<ZipTreeValue> item) {
+	protected String createFqName(TreeItem<ZipTreeValue> item) {
 
 		StringBuilder buffer = new StringBuilder();
 

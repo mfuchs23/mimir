@@ -31,7 +31,7 @@ public abstract class FilterTreeTask extends Task<Void> implements
 	
 		if (item.getValue().isDirectory() == false) {
 	
-			if (matches(item.getValue()) == true) {
+			if (matches(item.getValue()) || item.getParent() != null && matches(item.getParent().getValue())) {
 				TreeItem<ZipTreeValue> copyOf = new TreeItem<>(item.getValue());
 				copyOf.setGraphic(item.getGraphic());
 				treeParent.getChildren().add(copyOf);
@@ -57,7 +57,7 @@ public abstract class FilterTreeTask extends Task<Void> implements
 			TreeItem<ZipTreeValue> treeFolder = treeParent;
 			treeParent = treeParent.getParent();
 			
-			if (treeFolder.getChildren().size() == 0) {
+			if (treeFolder.getChildren().size() == 0 && matches(item.getValue()) == false) {
 				treeParent.getChildren().remove(treeFolder);
 			}
 		}

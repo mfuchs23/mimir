@@ -12,170 +12,210 @@
 <?import javafx.scene.paint.*?>
 <?import javafx.scene.text.*?>
 
-<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="800.0" prefWidth="1280.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.dbdoclet.mimir.MimirController">
+<VBox styleClass="background" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="800.0" prefWidth="1280.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.dbdoclet.mimir.MainController">
   <children>
     <MenuBar fx:id="menuBar" VBox.vgrow="NEVER">
       <menus>
         <Menu text="%key.archive">
           <items>
             <MenuItem onAction="#onOpenArchive" text="%key.open">
-                     <accelerator>
-                        <KeyCodeCombination alt="UP" code="O" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
-                     </accelerator>
-                     <graphic>
-                        <ImageView fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true">
-                           <image>
-                              <Image url="@resources/icons/folder_16.png" />
-                           </image>
-                        </ImageView>
-                     </graphic>
-                     </MenuItem>
+              <accelerator>
+                <KeyCodeCombination alt="UP" code="O" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
+              </accelerator>
+              <graphic>
+                <ImageView fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true">
+                  <image>
+                    <Image url="@resources/icons/folder_16.png" />
+                  </image>
+                </ImageView>
+              </graphic>
+            </MenuItem>
             <MenuItem onAction="#onCloseArchive" text="%key.close">
-                     <accelerator>
-                        <KeyCodeCombination alt="UP" code="S" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
-                     </accelerator>
-                     <graphic>
-                        <ImageView fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true">
-                           <image>
-                              <Image url="@resources/icons/delete_16.png" />
-                           </image>
-                        </ImageView>
-                     </graphic></MenuItem>
+              <accelerator>
+                <KeyCodeCombination alt="UP" code="S" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
+              </accelerator>
+              <graphic>
+                <ImageView fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true">
+                  <image>
+                    <Image url="@resources/icons/delete_16.png" />
+                  </image>
+                </ImageView>
+              </graphic>
+	    </MenuItem>
+            <MenuItem onAction="#onReloadArchive" text="%key.reload">
+              <accelerator>
+                <KeyCodeCombination alt="UP" code="F5" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
+              </accelerator>
+              <graphic>
+                <ImageView fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true">
+                  <image>
+                    <Image url="@resources/icons/down_16.png" />
+                  </image>
+                </ImageView>
+              </graphic>
+	    </MenuItem>
             <MenuItem onAction="#onQuit" text="%key.quit">
-                     <accelerator>
-                        <KeyCodeCombination alt="DOWN" code="F4" control="UP" meta="UP" shift="UP" shortcut="UP" />
-                     </accelerator>
-                     <graphic>
-                        <ImageView fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true">
-                           <image>
-                              <Image url="@resources/icons/block_16.png" />
-                           </image>
-                        </ImageView>
-                     </graphic></MenuItem>
+              <accelerator>
+                <KeyCodeCombination alt="DOWN" code="F4" control="UP" meta="UP" shift="UP" shortcut="UP" />
+              </accelerator>
+              <graphic>
+                <ImageView fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true">
+                  <image>
+                    <Image url="@resources/icons/block_16.png" />
+                  </image>
+                </ImageView>
+            </graphic></MenuItem>
           </items>
         </Menu>
       </menus>
     </MenuBar>
-      <ToolBar prefHeight="40.0" prefWidth="200.0">
-        <items>
-          <Button mnemonicParsing="false" onAction="#onOpenArchive">
-               <graphic>
-                  <ImageView fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true">
-                     <image>
-                        <Image url="@resources/icons/folder_16.png" />
-                     </image>
-                  </ImageView>
-               </graphic></Button>
-            <Button mnemonicParsing="false" onAction="#onCloseArchive">
-               <graphic>
-                  <ImageView fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true">
-                     <image>
-                        <Image url="@resources/icons/delete_16.png" />
-                     </image>
-                  </ImageView>
-               </graphic>
-            </Button>
-            <Button mnemonicParsing="false" onAction="#onDuplicateClasses">
-               <graphic>
-                  <ImageView fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true">
-                     <image>
-                        <Image url="@resources/icons/diagram_16.png" />
-                     </image>
-                  </ImageView>
-               </graphic>
-            </Button>
-            <Separator orientation="VERTICAL" />
-            <Button mnemonicParsing="false" onAction="#onSearch">
-               <graphic>
-                  <ImageView fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true">
-                     <image>
-                        <Image url="@resources/icons/search_16.png" />
-                     </image>
-                  </ImageView>
-               </graphic>
-            </Button>
-            <Button mnemonicParsing="false" onAction="#onQuit">
-               <graphic>
-                  <ImageView fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true">
-                     <image>
-                        <Image url="@resources/icons/block_16.png" />
-                     </image>
-                  </ImageView>
-               </graphic>
-            </Button>
-        </items>
-      </ToolBar>
-      <SplitPane dividerPositions="0.29797979797979796" prefHeight="160.0" prefWidth="200.0" VBox.vgrow="ALWAYS">
-        <items>
-          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
-               <children>
-                  <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-                     <children>
-                        <HBox spacing="5.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-                           <children>
-                              <Label text="%key.filter">
-                                 <HBox.margin>
-                                    <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-                                 </HBox.margin>
-                              </Label>
-                              <TextField fx:id="filterPattern">
-                                 <HBox.margin>
-                                    <Insets />
-                                 </HBox.margin>
-                              </TextField>
-                           </children>
-                           <padding>
-                              <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-                           </padding>
-                        </HBox>
-                        <TreeView fx:id="treeView" VBox.vgrow="ALWAYS" />
-                     </children>
-                  </VBox>
-               </children>
-            </AnchorPane>
-          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
-               <children>
-                  <TabPane fx:id="tabPane" layoutX="74.0" layoutY="58.0" prefHeight="200.0" prefWidth="200.0" tabClosingPolicy="UNAVAILABLE" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-                    <tabs>
-                      <Tab text="%key.report">
-                        <content>
-                          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
-                                 <children>
-                                    <WebView fx:id="reportView" prefHeight="200.0" prefWidth="200.0" stylesheets="@resources/css/Report.css" AnchorPane.bottomAnchor="5.0" AnchorPane.leftAnchor="5.0" AnchorPane.rightAnchor="5.0" AnchorPane.topAnchor="5.0" />
-                                 </children></AnchorPane>
-                        </content>
-                      </Tab>
-                      <Tab text="Meta">
-                           <content>
-                              <GridPane hgap="3.0" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" vgap="3.0">
-                                <columnConstraints>
-                                  <ColumnConstraints hgrow="SOMETIMES" minWidth="-Infinity" />
-                                  <ColumnConstraints hgrow="SOMETIMES" minWidth="-Infinity" />
-                                </columnConstraints>
-                                <rowConstraints>
-                                  <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                  <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                  <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                    <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                </rowConstraints>
-                                 <children>
-                                    <Label text="%key.archive" />
-                                    <TextField fx:id="archivePath" maxHeight="-Infinity" maxWidth="-Infinity" GridPane.columnIndex="1" />
-                                 </children>
-                                 <padding>
-                                    <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-                                 </padding>
-                              </GridPane>
-                           </content>
-                      </Tab>
-                    </tabs>
-                  </TabPane>
-               </children>
-            </AnchorPane>
-        </items>
-      </SplitPane>
+    <ToolBar fx:id="toolBar" prefHeight="40.0" prefWidth="200.0">
+      <items>
+        <Button mnemonicParsing="false" onAction="#onOpenArchive">
+          <graphic>
+            <ImageView fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true">
+              <image>
+                <Image url="@resources/icons/folder_16.png" />
+              </image>
+            </ImageView>
+        </graphic></Button>
+        <Button mnemonicParsing="false" onAction="#onCloseArchive">
+          <graphic>
+            <ImageView fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true">
+              <image>
+                <Image url="@resources/icons/delete_16.png" />
+              </image>
+            </ImageView>
+          </graphic>
+        </Button>
+        <Button mnemonicParsing="false" onAction="#onReloadArchive">
+          <graphic>
+            <ImageView fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true">
+              <image>
+                <Image url="@resources/icons/down_16.png" />
+              </image>
+            </ImageView>
+          </graphic>
+        </Button>
+        <Separator orientation="VERTICAL" />
+        <Button mnemonicParsing="false" onAction="#onSearch">
+          <graphic>
+            <ImageView fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true">
+              <image>
+                <Image url="@resources/icons/search_16.png" />
+              </image>
+            </ImageView>
+          </graphic>
+        </Button>
+        <Button mnemonicParsing="false" onAction="#onQuit">
+          <graphic>
+            <ImageView fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true">
+              <image>
+                <Image url="@resources/icons/block_16.png" />
+              </image>
+            </ImageView>
+          </graphic>
+        </Button>
+      </items>
+    </ToolBar>
+    <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="100.0" VBox.vgrow="ALWAYS">
+      <children>
+    	<VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+    	  <children>
+	    <HBox>
+	      <children>
+    		<Label text="%key.archive">
+		  <HBox.margin>
+		    <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+		  </HBox.margin>
+    		</Label>
+    		<Label fx:id="archivePath">
+		  <HBox.margin>
+		    <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+		  </HBox.margin>
+    		</Label>
+	      </children>
+	    </HBox>
+    	    <SplitPane dividerPositions="0.29797979797979796" prefHeight="160.0" prefWidth="200.0" VBox.vgrow="ALWAYS" HBox.hgrow="ALWAYS" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+      	      <items>
+        	<AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="768.0" prefWidth="1024.0">
+          	  <children>
+            	    <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+              	      <children>
+                	<HBox spacing="5.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                  	  <children>
+                    	    <Label text="%key.filter">
+                     	      <HBox.margin>
+				<Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+			      </HBox.margin>
+			    </Label>
+			    <TextField fx:id="filterPattern">
+			      <HBox.margin>
+				<Insets />
+			      </HBox.margin>
+			    </TextField>
+			    <Button fx:id="clearFilter" mnemonicParsing="false" onAction="#onClearFilter">
+    			      <graphic>
+            			<ImageView fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true">
+              			  <image>
+                		    <Image url="@resources/icons/backspace_16.png" />
+             			  </image>
+            			</ImageView>
+			      </graphic>
+        		    </Button>
+			  </children>
+			  <padding>
+			    <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+			  </padding>
+			</HBox>
+			<TreeView fx:id="treeView" VBox.vgrow="ALWAYS" />
+		      </children>
+		    </VBox>
+		  </children>
+		</AnchorPane>
+		<AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
+		  <children>
+		    <TabPane fx:id="tabPane" layoutX="74.0" layoutY="58.0" prefHeight="200.0" prefWidth="200.0" tabClosingPolicy="UNAVAILABLE" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+		      <tabs>
+			<Tab id="sys:search" text="%key.search">
+			  <content>
+			    <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+			      <children>
+				<HBox alignment="CENTER" spacing="5.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+				  <children>
+				    <Label text="%key.pattern">
+				      <padding>
+					<Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+				      </padding>
+				      <HBox.margin>
+					<Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+				      </HBox.margin>
+				    </Label>
+				    <TextField fx:id="searchPattern" minWidth="299.0" onAction="#onSearch" prefHeight="25.0" prefWidth="387.0" />
+				    <Button mnemonicParsing="false" onAction="#onSearch" text="%key.start" />
+				  </children>
+				  <opaqueInsets>
+				    <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+				  </opaqueInsets>
+				  <padding>
+				    <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+				  </padding>
+				</HBox>
+			    </children></AnchorPane>
+			  </content>
+			</Tab>
+		      </tabs>
+		    </TabPane>
+		  </children>
+		</AnchorPane>
+	      </items>
+	    </SplitPane>
+	  </children>
+	</VBox>
+      </children>
+    </AnchorPane>
   </children>
-   <effect>
-      <Blend />
-   </effect>
+  <effect>
+    <Blend />
+  </effect>
 </VBox>

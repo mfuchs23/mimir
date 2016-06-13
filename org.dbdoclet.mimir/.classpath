@@ -3,10 +3,19 @@
 	<classpathentry kind="src" path="src/main/java"/>
 	<classpathentry kind="src" path="src/main/resources"/>
 	<classpathentry kind="con" path="org.apache.ivyde.eclipse.cpcontainer.IVYDE_CONTAINER/?project=org.dbdoclet.mimir&amp;ivyXmlPath=ivy.xml&amp;confs=*"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/jdk1.8.0_45">
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8">
 		<attributes>
 			<attribute name="owner.project.facets" value="java"/>
 		</attributes>
+		<accessrules>
+			<accessrule kind="accessible" pattern="javafx/**"/>
+		</accessrules>
 	</classpathentry>
+	<classpathentry kind="lib" path="lib/controlsfx_8.40.9.jar"/>
+	<classpathentry kind="lib" path="lib/lucene-analyzers-common_5.2.1.jar"/>
+	<classpathentry kind="lib" path="lib/lucene-core_5.2.1.jar"/>
+	<classpathentry kind="lib" path="lib/lucene-queryparser_5.2.1.jar"/>
+	<classpathentry kind="lib" path="lib/commons-io-1.4.jar"/>
+	<classpathentry kind="lib" path="lib/bcel-5.2.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

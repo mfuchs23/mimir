@@ -1,0 +1,14 @@
+.background {
+}
+
+.label {
+	-fx-font-weight: normal;
+}
+
+#clearFilter {
+}
+
+#archivePath {
+	-fx-font-style: italic;
+	-fx-font-weight: bold;
+}

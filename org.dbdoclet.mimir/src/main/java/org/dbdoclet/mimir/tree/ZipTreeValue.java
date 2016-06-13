@@ -13,6 +13,7 @@ public class ZipTreeValue  {
 	private String name;
 	private String content;
 	private boolean isDirectory = false;
+	private String fullyQualifiedName;
 
 	public ZipTreeValue(String name) {
 		this.name = name;
@@ -55,9 +56,13 @@ public class ZipTreeValue  {
 	}
 
 	public String getFullyQualifiedName() {
-		return zipEntry.getName();
+		return fullyQualifiedName;
 	}
 	
+	public void setFullyQualifiedName(String fullyQualifiedName) {
+		this.fullyQualifiedName = fullyQualifiedName;
+	}
+
 	public ZipEntry getZipEntry() {
 		return zipEntry;
 	}
