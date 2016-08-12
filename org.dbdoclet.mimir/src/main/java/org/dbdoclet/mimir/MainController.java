@@ -17,8 +17,11 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
 import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
@@ -35,6 +38,8 @@ import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TabPane.TabClosingPolicy;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToolBar;
@@ -49,12 +54,13 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 
-import org.apache.lucene.search.Query;
 import org.controlsfx.dialog.ProgressDialog;
 import org.dbdoclet.mimir.dialog.ErrorDialog;
+import org.dbdoclet.mimir.search.SearchEngine;
+import org.dbdoclet.mimir.search.SearchHit;
+import org.dbdoclet.mimir.search.SearchHitCellFactory;
 import org.dbdoclet.mimir.task.DuplicateReportTask;
 import org.dbdoclet.mimir.task.FilterTreeTask;
-import org.dbdoclet.mimir.task.LuceneFilterTreeTask;
 import org.dbdoclet.mimir.task.RegexFilterTreeTask;
 import org.dbdoclet.mimir.task.ScanArchiveTask;
 import org.dbdoclet.mimir.tree.ZipTreeCell;
@@ -85,9 +91,14 @@ public class MainController implements Initializable {
 	private WebView reportView;
 	@FXML
 	private Label archivePath;
-
-	private Stage stage;
+	@FXML
+	private TableView<SearchHit> searchHits;
+	@FXML
+	private TableColumn<SearchHit, String> searchHitCol;
+	
+ 	private Stage stage;
 	private ArchiveModel archiveModel;
+	private SearchEngine searchEngine;
 	private ExceptionHandler exceptionHandler;
 	private FileChooser fileChooser = new FileChooser();
 	private RecentlyUsed recentlyUsed = new RecentlyUsed();
@@ -120,11 +131,15 @@ public class MainController implements Initializable {
 		}
 
 		archiveModel = new ArchiveModel(resources);
+		searchEngine = new SearchEngine();
+		archiveModel.setSearchEngine(searchEngine);
+		
 		filterPattern.setOnAction(e -> onFilterChanged());
 		treeView.setCellFactory((TreeView<ZipTreeValue> p) -> new ZipTreeCell(
 				resources));
 		treeView.setOnMouseClicked(e -> onTreeDoubleClick(e));
 
+		/*
 		if (recentlyUsed.getMostRecentlyUsed() != null) {
 			try {
 				openArchive(recentlyUsed.getMostRecentlyUsed().toFile());
@@ -132,6 +147,9 @@ public class MainController implements Initializable {
 				exceptionHandler.showDialog(oops);
 			}
 		}
+		*/
+		
+		initSearchTableView();
 	}
 
 	@FXML
@@ -139,7 +157,7 @@ public class MainController implements Initializable {
 		filterPattern.setText("");
 		onFilterChanged();
 	}
-	
+
 	@FXML
 	public void onCloseArchive(ActionEvent event) {
 
@@ -212,7 +230,6 @@ public class MainController implements Initializable {
 					return;
 				}
 
-				closeArchive();
 				openArchive(file);
 			}
 
@@ -231,7 +248,7 @@ public class MainController implements Initializable {
 		} catch (IOException oops) {
 			exceptionHandler.showDialog(oops);
 		}
-		
+
 		watcher.interrupt();
 		stage.close();
 		Platform.exit();
@@ -246,12 +263,20 @@ public class MainController implements Initializable {
 	public void onSearch(ActionEvent event) {
 
 		try {
+			
 			if (archiveModel == null) {
 				return;
 			}
 
-			search(searchPattern.getText());
+			TreeItem<ZipTreeValue> treeRoot = archiveModel.getTreeRoot();
 
+			if (treeRoot == null) {
+				return;
+			}
+			
+			ObservableList<SearchHit> hits = searchEngine.search(searchPattern.getText());
+			searchHits.setItems(hits);
+			
 		} catch (Exception e) {
 			new ExceptionHandler().showDialog(e);
 		}
@@ -271,10 +296,10 @@ public class MainController implements Initializable {
 
 		Alert alert = new Alert(AlertType.CONFIRMATION);
 		alert.setTitle(resources.getString("key.refresh_title"));
-		alert.setHeaderText(resources
-				.getString("key.refresh_header"));
-		alert.setContentText(MessageFormat.format(resources.getString("key.refresh_content"), archiveModel.getArchiveFile()
-				.getName()));
+		alert.setHeaderText(resources.getString("key.refresh_header"));
+		alert.setContentText(MessageFormat.format(resources
+				.getString("key.refresh_content"), archiveModel
+				.getArchiveFile().getName()));
 
 		Optional<ButtonType> result = alert.showAndWait();
 		if (result.get() == ButtonType.OK) {
@@ -289,54 +314,31 @@ public class MainController implements Initializable {
 	public void reload() {
 
 		try {
-			
+
 			openArchive(archiveModel.getArchiveFile());
 			watcher.register(archiveModel.getArchiveFile());
-			
+
 		} catch (IOException e) {
 			exceptionHandler.showDialog(e);
 		}
 	}
 
-	public void search(String text) {
-
-		TreeItem<ZipTreeValue> treeRoot = archiveModel.getTreeRoot();
-
-		if (treeRoot == null) {
-			return;
-		}
-
-		try {
-
-			if (text.trim().length() > 0 && text.equals("*") == false) {
-
-				Query query = archiveModel.createQuery("content", text);
-				LuceneFilterTreeTask filterTreeTask = new LuceneFilterTreeTask(
-						query, archiveModel);
-
-				filterTreeTask.exceptionProperty()
-						.addListener(exceptionHandler);
-
-				ProgressDialog dialog = new ProgressDialog(filterTreeTask);
-				dialog.setHeaderText(resources
-						.getString("key.archive_scanning"));
-				Executors.newSingleThreadExecutor().submit(filterTreeTask);
-				dialog.showAndWait();
-
-				treeRoot = filterTreeTask.getTreeRoot();
-			}
-
-			treeView.setRoot(treeRoot);
-			treeRoot.setExpanded(true);
-
-		} catch (Throwable oops) {
-			exceptionHandler.showDialog(oops);
-		}
-	}
-
 	public void setStage(Stage stage) {
+		
 		this.stage = stage;
-		stage.setOnCloseRequest(e -> onCloseRequest(e));
+		
+		stage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+
+			@Override
+			public void handle(WindowEvent event) {
+				try {
+					recentlyUsed.save();
+				} catch (IOException oops) {
+					exceptionHandler.showDialog(oops);
+				}
+				watcher.interrupt();
+			}
+		});
 	}
 
 	public void updateRecentlyUsedMenu() {
@@ -376,13 +378,15 @@ public class MainController implements Initializable {
 
 	private void closeArchive() {
 
-		List<Tab> removeTabList = tabPane
-				.getTabs()
-				.stream()
-				.filter(tab -> tab.getId() != null
-						&& tab.getId().startsWith("sys:") == false)
-				.collect(Collectors.toList());
-		tabPane.getTabs().removeAll(removeTabList);
+		if (tabPane != null) {
+			List<Tab> removeTabList = tabPane
+					.getTabs()
+					.stream()
+					.filter(tab -> tab.getId() != null
+							&& tab.getId().startsWith("sys:") == false)
+					.collect(Collectors.toList());
+			tabPane.getTabs().removeAll(removeTabList);
+		}
 	}
 
 	private Tab createTextTab(String name, String content) {
@@ -396,13 +400,11 @@ public class MainController implements Initializable {
 		return tab;
 	}
 
-	private void onCloseRequest(WindowEvent e) {
-		try {
-			recentlyUsed.save();
-		} catch (IOException oops) {
-			exceptionHandler.showDialog(oops);
-		}
-		return;
+	private void initSearchTableView() {
+				
+		ObservableList<SearchHit> data = FXCollections.observableArrayList();
+		searchHits.setItems(data);
+		searchHitCol.setCellFactory(new SearchHitCellFactory());
 	}
 
 	private void onFilterChanged() {
@@ -453,8 +455,15 @@ public class MainController implements Initializable {
 
 			String content = value.getContent();
 
-			tabPane.getTabs().add(0, createTextTab(value.getName(), content));
-			tabPane.getSelectionModel().select(0);
+			FilteredList<Tab> tabList = tabPane.getTabs().filtered(t -> t.getText().equals(value.getName()));
+			
+			if (tabList.size() == 0) {
+				tabPane.getTabs().add(0, createTextTab(value.getName(), content));
+				tabPane.getSelectionModel().select(0);
+			} else {
+				tabPane.getSelectionModel().select(tabList.get(0));
+			}
+			
 			tabPane.setTabClosingPolicy(TabClosingPolicy.SELECTED_TAB);
 		}
 	}
@@ -464,6 +473,8 @@ public class MainController implements Initializable {
 		if (file == null) {
 			return;
 		}
+
+		closeArchive();
 
 		archiveModel.setArchive(file);
 		recentlyUsed.setMostRecentlyUsed(file.toPath());

@@ -17,7 +17,7 @@ public class LuceneFilterTreeTask extends FilterTreeTask {
 	public LuceneFilterTreeTask(Query query, ArchiveModel archiveModel) throws IOException, ParseException {
 		
 		super(archiveModel);
-		hits = archiveModel.search(query);			
+		hits = archiveModel.getSearchEngine().search(query);			
 	}
 
 	public boolean matches(ZipTreeValue item) {

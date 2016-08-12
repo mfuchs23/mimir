@@ -1,18 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.web.*?>
-<?import javafx.geometry.*?>
-<?import javafx.scene.effect.*?>
-<?import javafx.scene.image.*?>
-<?import javafx.scene.input.*?>
-<?import java.lang.*?>
-<?import java.util.*?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
-<?import javafx.scene.paint.*?>
-<?import javafx.scene.text.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Menu?>
+<?import javafx.scene.control.MenuBar?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ToolBar?>
+<?import javafx.scene.control.TreeView?>
+<?import javafx.scene.control.cell.PropertyValueFactory?>
+<?import javafx.scene.effect.Blend?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.input.KeyCodeCombination?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
 
-<VBox styleClass="background" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="800.0" prefWidth="1280.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.dbdoclet.mimir.MainController">
+<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="800.0" prefWidth="1280.0" styleClass="background" xmlns="http://javafx.com/javafx/8.0.60" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.dbdoclet.mimir.MainController">
   <children>
     <MenuBar fx:id="menuBar" VBox.vgrow="NEVER">
       <menus>
@@ -41,7 +53,7 @@
                   </image>
                 </ImageView>
               </graphic>
-	    </MenuItem>
+            </MenuItem>
             <MenuItem onAction="#onReloadArchive" text="%key.reload">
               <accelerator>
                 <KeyCodeCombination alt="UP" code="F5" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
@@ -53,7 +65,7 @@
                   </image>
                 </ImageView>
               </graphic>
-	    </MenuItem>
+            </MenuItem>
             <MenuItem onAction="#onQuit" text="%key.quit">
               <accelerator>
                 <KeyCodeCombination alt="DOWN" code="F4" control="UP" meta="UP" shift="UP" shortcut="UP" />
@@ -120,98 +132,112 @@
     </ToolBar>
     <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="100.0" VBox.vgrow="ALWAYS">
       <children>
-    	<VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-    	  <children>
-	    <HBox>
-	      <children>
-    		<Label text="%key.archive">
-		  <HBox.margin>
-		    <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-		  </HBox.margin>
-    		</Label>
-    		<Label fx:id="archivePath">
-		  <HBox.margin>
-		    <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-		  </HBox.margin>
-    		</Label>
-	      </children>
-	    </HBox>
-    	    <SplitPane dividerPositions="0.29797979797979796" prefHeight="160.0" prefWidth="200.0" VBox.vgrow="ALWAYS" HBox.hgrow="ALWAYS" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-      	      <items>
-        	<AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="768.0" prefWidth="1024.0">
-          	  <children>
-            	    <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-              	      <children>
-                	<HBox spacing="5.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-                  	  <children>
-                    	    <Label text="%key.filter">
-                     	      <HBox.margin>
-				<Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-			      </HBox.margin>
-			    </Label>
-			    <TextField fx:id="filterPattern">
-			      <HBox.margin>
-				<Insets />
-			      </HBox.margin>
-			    </TextField>
-			    <Button fx:id="clearFilter" mnemonicParsing="false" onAction="#onClearFilter">
-    			      <graphic>
-            			<ImageView fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true">
-              			  <image>
-                		    <Image url="@resources/icons/backspace_16.png" />
-             			  </image>
-            			</ImageView>
-			      </graphic>
-        		    </Button>
-			  </children>
-			  <padding>
-			    <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-			  </padding>
-			</HBox>
-			<TreeView fx:id="treeView" VBox.vgrow="ALWAYS" />
-		      </children>
-		    </VBox>
-		  </children>
-		</AnchorPane>
-		<AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
-		  <children>
-		    <TabPane fx:id="tabPane" layoutX="74.0" layoutY="58.0" prefHeight="200.0" prefWidth="200.0" tabClosingPolicy="UNAVAILABLE" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-		      <tabs>
-			<Tab id="sys:search" text="%key.search">
-			  <content>
-			    <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
-			      <children>
-				<HBox alignment="CENTER" spacing="5.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-				  <children>
-				    <Label text="%key.pattern">
-				      <padding>
-					<Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-				      </padding>
-				      <HBox.margin>
-					<Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-				      </HBox.margin>
-				    </Label>
-				    <TextField fx:id="searchPattern" minWidth="299.0" onAction="#onSearch" prefHeight="25.0" prefWidth="387.0" />
-				    <Button mnemonicParsing="false" onAction="#onSearch" text="%key.start" />
-				  </children>
-				  <opaqueInsets>
-				    <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-				  </opaqueInsets>
-				  <padding>
-				    <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-				  </padding>
-				</HBox>
-			    </children></AnchorPane>
-			  </content>
-			</Tab>
-		      </tabs>
-		    </TabPane>
-		  </children>
-		</AnchorPane>
-	      </items>
-	    </SplitPane>
-	  </children>
-	</VBox>
+        <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+          <children>
+            <HBox>
+              <children>
+                <Label text="%key.archive">
+                  <HBox.margin>
+                    <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                  </HBox.margin>
+                </Label>
+                <Label fx:id="archivePath">
+                  <HBox.margin>
+                    <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                  </HBox.margin>
+                </Label>
+              </children>
+            </HBox>
+            <SplitPane dividerPositions="0.29797979797979796" prefHeight="160.0" prefWidth="200.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+              <items>
+                <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="768.0" prefWidth="1024.0">
+                  <children>
+                    <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                      <children>
+                        <HBox spacing="5.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                          <children>
+                            <Label text="%key.filter">
+                              <HBox.margin>
+                                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                              </HBox.margin>
+                            </Label>
+                            <TextField fx:id="filterPattern">
+                              <HBox.margin>
+                                <Insets />
+                              </HBox.margin>
+                            </TextField>
+                            <Button fx:id="clearFilter" mnemonicParsing="false" onAction="#onClearFilter">
+                              <graphic>
+                                <ImageView fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true">
+                                  <image>
+                                    <Image url="@resources/icons/backspace_16.png" />
+                                  </image>
+                                </ImageView>
+                              </graphic>
+                            </Button>
+                          </children>
+                          <padding>
+                            <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                          </padding>
+                        </HBox>
+                        <TreeView fx:id="treeView" VBox.vgrow="ALWAYS" />
+                      </children>
+                    </VBox>
+                  </children>
+                </AnchorPane>
+                <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
+                  <children>
+                    <TabPane fx:id="tabPane" layoutX="74.0" layoutY="58.0" prefHeight="200.0" prefWidth="200.0" tabClosingPolicy="UNAVAILABLE" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                      <tabs>
+                        <Tab id="sys:search" text="%key.search">
+                          <content>
+                            <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0" styleClass="menu-bar">
+                              <children>
+                                <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                                  <children>
+                                    <HBox alignment="CENTER" spacing="5.0">
+                                      <children>
+                                        <Label text="%key.pattern">
+                                          <padding>
+                                            <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                                          </padding>
+                                          <HBox.margin>
+                                            <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                                          </HBox.margin>
+                                        </Label>
+                                        <TextField fx:id="searchPattern" minWidth="299.0" onAction="#onSearch" prefHeight="25.0" prefWidth="387.0" />
+                                        <Button mnemonicParsing="false" onAction="#onSearch" text="%key.start" />
+                                      </children>
+                                      <opaqueInsets>
+                                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                                      </opaqueInsets>
+                                      <padding>
+                                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                                      </padding>
+                                    </HBox>
+                                    <TableView fx:id="searchHits" prefHeight="200.0" prefWidth="200.0" VBox.vgrow="ALWAYS">
+                                      <columns>
+                                        <TableColumn editable="false" prefWidth="75.0" text="%key.index">
+                                          <cellValueFactory><PropertyValueFactory property="index" /></cellValueFactory>
+                                        </TableColumn>
+                                        <TableColumn fx:id="searchHitCol" minWidth="-Infinity" prefWidth="878.0" text="%key.filename">
+                                          <cellValueFactory><PropertyValueFactory property="fileName" /></cellValueFactory>
+                                        </TableColumn>
+                                      </columns>
+                                    </TableView>
+                                  </children>
+                                </VBox>
+                            </children></AnchorPane>
+                          </content>
+                        </Tab>
+                      </tabs>
+                    </TabPane>
+                  </children>
+                </AnchorPane>
+              </items>
+            </SplitPane>
+          </children>
+        </VBox>
       </children>
     </AnchorPane>
   </children>

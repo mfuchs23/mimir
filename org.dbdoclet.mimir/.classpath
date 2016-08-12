@@ -17,5 +17,7 @@
 	<classpathentry kind="lib" path="lib/lucene-queryparser_5.2.1.jar"/>
 	<classpathentry kind="lib" path="lib/commons-io-1.4.jar"/>
 	<classpathentry kind="lib" path="lib/bcel-5.2.jar"/>
+	<classpathentry kind="lib" path="lib/lucene-highlighter-5.2.1.jar"/>
+	<classpathentry kind="lib" path="lib/lucene-memory-5.2.1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
