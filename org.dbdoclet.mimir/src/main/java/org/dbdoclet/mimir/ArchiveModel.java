@@ -326,6 +326,11 @@ public class ArchiveModel {
 			 * Eingebettete Zip-Dateien müssen auch als Verzeichnisse behandelt
 			 * werden.
 			 */
+
+			if (scanContext.visitor.isCancelled()) {
+				return;
+			}
+			
 			treeParent.getValue().isDirectory(true);
 
 			String name = entry.getName();

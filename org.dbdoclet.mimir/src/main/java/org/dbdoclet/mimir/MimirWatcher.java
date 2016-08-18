@@ -12,8 +12,13 @@ import java.nio.file.WatchService;
 
 import javafx.application.Platform;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class MimirWatcher extends Thread {
 
+	private static final Logger log = LogManager.getLogger(MimirWatcher.class);
+		
 	private WatchService watcher = null;
 	private MainController controller;
 	private File file;
@@ -56,11 +61,6 @@ public class MimirWatcher extends Thread {
 						Platform.runLater(new Runnable() {
 							@Override
 							public void run() {
-								try {
-									sleep(2000);
-								} catch (InterruptedException oops) {
-									//
-								}
 								controller.refresh();
 							}
 						});
@@ -72,5 +72,16 @@ public class MimirWatcher extends Thread {
 			}
 		}
 
+	}
+
+	public void close() {
+
+		if (watcher != null) {
+			try {
+				watcher.close();
+			} catch (IOException oops) {
+				log.warn("Closing the WatcherService failed!", oops);
+			}
+		}
 	}
 }

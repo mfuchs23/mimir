@@ -102,8 +102,8 @@ public class SearchEngine {
 				TextFragment[] fragments = highlighter.getBestTextFragments(tokenStream, content, false, 10);				
 				
 				StringBuilder buffer = new StringBuilder();
-				buffer.append("<h1 style='font-family: Arial; font-size: 11pt;'>");
-				buffer.append(doc.get("name"));
+				buffer.append("<h1 style='font-family: Arial; font-size: 10pt;'>");
+				buffer.append(doc.get("name"));                                                                        
 				buffer.append("</h1>\n");
 				
 				for (TextFragment frag : fragments) {

@@ -8,10 +8,11 @@ import org.dbdoclet.mimir.IVisitor;
 public class ScanArchiveTask extends Task<Void> implements IVisitor<String>{
 
 	private ArchiveModel archiveModel;
-
+	private long lastUpdate;
+	
 	public ScanArchiveTask(ArchiveModel archiveModel) {
 		this.archiveModel = archiveModel;
-		
+		lastUpdate = System.currentTimeMillis();
 	}
 	
 	@Override
@@ -23,7 +24,15 @@ public class ScanArchiveTask extends Task<Void> implements IVisitor<String>{
 
 	@Override
 	public void accept(String name) {
+
+		long msecs = System.currentTimeMillis();
+	
+		if (msecs - lastUpdate < 200) {
+			return;
+		}
+		
 		updateMessage(name);
+		lastUpdate = System.currentTimeMillis();
 	}
 
 }

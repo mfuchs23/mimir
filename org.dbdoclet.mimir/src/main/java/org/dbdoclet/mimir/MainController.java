@@ -17,6 +17,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import javafx.application.Platform;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
@@ -30,6 +32,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.DialogPane;
 import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
@@ -104,6 +107,7 @@ public class MainController implements Initializable {
 	private RecentlyUsed recentlyUsed = new RecentlyUsed();
 	private ResourceBundle resources;
 	private MimirWatcher watcher;
+	private StringProperty fileNameProperty = new SimpleStringProperty();
 
 	// private URL location;
 
@@ -230,6 +234,7 @@ public class MainController implements Initializable {
 					return;
 				}
 
+				fileNameProperty.setValue(file.getName());
 				openArchive(file);
 			}
 
@@ -327,6 +332,8 @@ public class MainController implements Initializable {
 		
 		this.stage = stage;
 		
+		stage.titleProperty().bind(fileNameProperty);
+		
 		stage.setOnCloseRequest(new EventHandler<WindowEvent>() {
 
 			@Override
@@ -336,7 +343,9 @@ public class MainController implements Initializable {
 				} catch (IOException oops) {
 					exceptionHandler.showDialog(oops);
 				}
-				watcher.interrupt();
+				watcher.close();
+				Platform.exit();
+				System.exit(0);
 			}
 		});
 	}
@@ -486,10 +495,23 @@ public class MainController implements Initializable {
 		scanArchiveTask.exceptionProperty().addListener(exceptionHandler);
 
 		ProgressDialog dialog = new ProgressDialog(scanArchiveTask);
-		dialog.setHeaderText(resources.getString("key.archive_scanning"));
+		dialog.setTitle(resources.getString("key.archive_scanning"));
+		dialog.headerTextProperty().bind(fileNameProperty);
+		dialog.setOnCloseRequest(closeRequest -> {
+			scanArchiveTask.cancel();
+		});
+		
+		DialogPane dialogPane = dialog.getDialogPane();
+		dialogPane.setPrefSize(600, 200);		
+		dialogPane.getButtonTypes().setAll(ButtonType.CANCEL);
+		
 		Executors.newSingleThreadExecutor().submit(scanArchiveTask);
 		dialog.showAndWait();
 
+		if (scanArchiveTask.isCancelled()) {
+			return;
+		}
+		
 		TreeItem<ZipTreeValue> treeRoot = archiveModel.getTreeRoot();
 		treeRoot.setExpanded(true);
 		treeView.setRoot(treeRoot);
