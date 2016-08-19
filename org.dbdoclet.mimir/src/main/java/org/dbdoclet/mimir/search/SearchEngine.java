@@ -4,10 +4,13 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -28,9 +31,10 @@ import org.apache.lucene.search.highlight.TokenSources;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
-
 public class SearchEngine {
 
+	private final static Logger log = LogManager.getLogger(SearchEngine.class);
+	
 	private Directory directory;
 	private Analyzer analyzer;
 
@@ -49,12 +53,12 @@ public class SearchEngine {
 		return analyzer;
 	}
 
-
 	public Directory getDirectory() {
 		return directory;
 	}
 
-	public List<Document> search(Query query) throws IOException, ParseException {
+	public List<Document> search(Query query) throws IOException,
+			ParseException {
 
 		DirectoryReader ireader = DirectoryReader.open(directory);
 		IndexSearcher isearcher = new IndexSearcher(ireader);
@@ -73,56 +77,79 @@ public class SearchEngine {
 
 		return docs;
 	}
-	
-	public ObservableList<SearchHit> search(String text) throws ParseException, IOException, InvalidTokenOffsetsException {
 
-		ObservableList<SearchHit> resultList = FXCollections.observableArrayList();
-		int index = 1;
+	public ObservableList<SearchHit> search(String text) throws ParseException,
+			IOException, InvalidTokenOffsetsException {
+
+		ObservableList<SearchHit> resultList = FXCollections
+				.observableArrayList();
+		
 		if (text.trim().length() > 0 && text.equals("*") == false) {
 
 			Query query = createQuery("content", text);
-			
+
 			SimpleHTMLFormatter htmlFormatter = new SimpleHTMLFormatter();
-			Highlighter highlighter = new Highlighter(htmlFormatter, new QueryScorer(query));
-			
+			Highlighter highlighter = new Highlighter(htmlFormatter,
+					new QueryScorer(query));
+
 			DirectoryReader ireader = DirectoryReader.open(directory);
 			IndexSearcher searcher = new IndexSearcher(ireader);
-			
+
 			TopDocs hits = searcher.search(query, 1000);
-			
-			for (int i = 0; i < hits.totalHits; i++) {
-			
-				int id = hits.scoreDocs[i].doc;
-				
-				Document doc = searcher.doc(id);
-				String content = doc.get("content");
-				
-				@SuppressWarnings("deprecation")
-				TokenStream tokenStream = TokenSources.getAnyTokenStream(searcher.getIndexReader(), id, "content", analyzer);
-				TextFragment[] fragments = highlighter.getBestTextFragments(tokenStream, content, false, 10);				
-				
-				StringBuilder buffer = new StringBuilder();
-				buffer.append("<h1 style='font-family: Arial; font-size: 10pt;'>");
-				buffer.append(doc.get("name"));                                                                        
-				buffer.append("</h1>\n");
-				
-				for (TextFragment frag : fragments) {
-					buffer.append("<p style='font-family: Arial; font-size: 10pt;'>");
-					buffer.append(applyFragStyle(frag.toString()));
-					buffer.append("</p>\n");
-					break;
-				}
-				
-				resultList.add(new SearchHit(index++, buffer.toString()));
-			}
+
+			IntStream
+					.range(0, hits.scoreDocs.length)
+					.forEach(
+							idx -> {
+
+								int id = hits.scoreDocs[idx].doc;
+
+								try {
+									
+									Document doc = searcher.doc(id);
+
+									String content = doc.get("content");
+
+									@SuppressWarnings("deprecation")
+									TokenStream tokenStream = TokenSources
+											.getAnyTokenStream(
+													searcher.getIndexReader(),
+													id, "content", analyzer);
+									TextFragment[] fragments = highlighter
+											.getBestTextFragments(tokenStream,
+													content, false, 10);
+
+									StringBuilder buffer = new StringBuilder();
+									buffer.append("<h1 style='font-family: Arial; font-size: 10pt;'>");
+									buffer.append(doc.get("name"));
+									buffer.append("</h1>\n");
+
+									for (TextFragment frag : fragments) {
+										buffer.append("<p style='font-family: Arial; font-size: 10pt;'>");
+										buffer.append(applyFragStyle(frag
+												.toString()));
+										buffer.append("</p>\n");
+										break;
+									}
+
+									resultList.add(new SearchHit(idx + 1,
+											buffer.toString()));
+								
+								} catch (Exception oops) {
+									log.fatal("Couldn't process search hit!", oops);
+									return;
+								}
+
+							});
 		}
 
 		return resultList;
 	}
 
 	private Object applyFragStyle(String html) {
-		
-		html = html.replaceAll("<[Bb]>", "<span style='background-color: yellow'>");
+
+		html = html.replaceAll("<[Bb]>",
+				"<span style='background-color: yellow'>");
 		html = html.replaceAll("</[Bb]>", "</span>");
 		return html;
 	}
@@ -130,7 +157,6 @@ public class SearchEngine {
 	public void setAnalyzer(Analyzer analyzer) {
 		this.analyzer = analyzer;
 	}
-
 
 	public void setDirectory(Directory directory) {
 		this.directory = directory;

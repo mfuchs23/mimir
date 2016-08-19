@@ -6,7 +6,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
-import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 
@@ -53,7 +52,8 @@ public class MimirWatcher extends Thread {
 			try {
 
 				WatchKey key = watcher.take();
-				for (WatchEvent<?> event : key.pollEvents()) {
+				
+				key.pollEvents().forEach(event -> {
 
 					Path changed = (Path) event.context();
 					if (changed != null && changed.toFile().getName()
@@ -65,7 +65,9 @@ public class MimirWatcher extends Thread {
 							}
 						});
 					}
-				}
+
+				});
+				
 
 			} catch (InterruptedException oops) {
 				return;

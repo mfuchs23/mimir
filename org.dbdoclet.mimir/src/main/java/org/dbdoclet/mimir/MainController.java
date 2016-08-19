@@ -97,9 +97,11 @@ public class MainController implements Initializable {
 	@FXML
 	private TableView<SearchHit> searchHits;
 	@FXML
+	private Tab searchTab;
+	@FXML
 	private TableColumn<SearchHit, String> searchHitCol;
-	
- 	private Stage stage;
+
+	private Stage stage;
 	private ArchiveModel archiveModel;
 	private SearchEngine searchEngine;
 	private ExceptionHandler exceptionHandler;
@@ -137,13 +139,12 @@ public class MainController implements Initializable {
 		archiveModel = new ArchiveModel(resources);
 		searchEngine = new SearchEngine();
 		archiveModel.setSearchEngine(searchEngine);
-		
+
 		filterPattern.setOnAction(e -> onFilterChanged());
 		treeView.setCellFactory((TreeView<ZipTreeValue> p) -> new ZipTreeCell(
 				resources));
 		treeView.setOnMouseClicked(e -> onTreeDoubleClick(e));
 
-		/*
 		if (recentlyUsed.getMostRecentlyUsed() != null) {
 			try {
 				openArchive(recentlyUsed.getMostRecentlyUsed().toFile());
@@ -151,8 +152,7 @@ public class MainController implements Initializable {
 				exceptionHandler.showDialog(oops);
 			}
 		}
-		*/
-		
+
 		initSearchTableView();
 	}
 
@@ -268,7 +268,7 @@ public class MainController implements Initializable {
 	public void onSearch(ActionEvent event) {
 
 		try {
-			
+
 			if (archiveModel == null) {
 				return;
 			}
@@ -278,10 +278,11 @@ public class MainController implements Initializable {
 			if (treeRoot == null) {
 				return;
 			}
-			
-			ObservableList<SearchHit> hits = searchEngine.search(searchPattern.getText());
+
+			ObservableList<SearchHit> hits = searchEngine.search(searchPattern
+					.getText());
 			searchHits.setItems(hits);
-			
+
 		} catch (Exception e) {
 			new ExceptionHandler().showDialog(e);
 		}
@@ -329,11 +330,11 @@ public class MainController implements Initializable {
 	}
 
 	public void setStage(Stage stage) {
-		
+
 		this.stage = stage;
-		
+
 		stage.titleProperty().bind(fileNameProperty);
-		
+
 		stage.setOnCloseRequest(new EventHandler<WindowEvent>() {
 
 			@Override
@@ -365,14 +366,16 @@ public class MainController implements Initializable {
 		Menu menu = menus.get(0);
 
 		ArrayList<MenuItem> removeOld = new ArrayList<>();
+
 		boolean sepFound = false;
+
 		for (MenuItem item : menu.getItems()) {
 			if (item instanceof SeparatorMenuItem || sepFound) {
 				removeOld.add(item);
 				sepFound = true;
 			}
 		}
-
+		
 		removeOld.forEach(item -> menu.getItems().remove(item));
 
 		menu.getItems().add(new SeparatorMenuItem());
@@ -410,7 +413,8 @@ public class MainController implements Initializable {
 	}
 
 	private void initSearchTableView() {
-				
+
+		searchTab.setClosable(false);
 		ObservableList<SearchHit> data = FXCollections.observableArrayList();
 		searchHits.setItems(data);
 		searchHitCol.setCellFactory(new SearchHitCellFactory());
@@ -464,15 +468,17 @@ public class MainController implements Initializable {
 
 			String content = value.getContent();
 
-			FilteredList<Tab> tabList = tabPane.getTabs().filtered(t -> t.getText().equals(value.getName()));
-			
+			FilteredList<Tab> tabList = tabPane.getTabs().filtered(
+					t -> t.getText().equals(value.getName()));
+
 			if (tabList.size() == 0) {
-				tabPane.getTabs().add(0, createTextTab(value.getName(), content));
+				tabPane.getTabs().add(0,
+						createTextTab(value.getName(), content));
 				tabPane.getSelectionModel().select(0);
 			} else {
 				tabPane.getSelectionModel().select(tabList.get(0));
 			}
-			
+
 			tabPane.setTabClosingPolicy(TabClosingPolicy.SELECTED_TAB);
 		}
 	}
@@ -500,18 +506,18 @@ public class MainController implements Initializable {
 		dialog.setOnCloseRequest(closeRequest -> {
 			scanArchiveTask.cancel();
 		});
-		
+
 		DialogPane dialogPane = dialog.getDialogPane();
-		dialogPane.setPrefSize(600, 200);		
+		dialogPane.setPrefSize(600, 200);
 		dialogPane.getButtonTypes().setAll(ButtonType.CANCEL);
-		
+
 		Executors.newSingleThreadExecutor().submit(scanArchiveTask);
 		dialog.showAndWait();
 
 		if (scanArchiveTask.isCancelled()) {
 			return;
 		}
-		
+
 		TreeItem<ZipTreeValue> treeRoot = archiveModel.getTreeRoot();
 		treeRoot.setExpanded(true);
 		treeView.setRoot(treeRoot);
@@ -545,23 +551,6 @@ public class MainController implements Initializable {
 				selectedIndex = hit.getAsInt();
 			}
 
-		} else {
-			searchTab = new Tab(tabTitle);
-			Stage dialog = new Stage();
-
-			dialog.initModality(Modality.WINDOW_MODAL);
-			dialog.initOwner(MimirMain.getMainWindow());
-
-			FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource(
-					"SearchDialog.fxml"),
-					PropertyResourceBundle
-							.getBundle("org.dbdoclet.mimir.MimirResources"));
-
-			Node scene = fxmlLoader.load();
-			searchTab.setContent(scene);
-			// SearchDialogController controller = fxmlLoader.getController();
-
-			tabPane.getTabs().add(0, searchTab);
 		}
 
 		tabPane.getSelectionModel().select(selectedIndex);

@@ -8,7 +8,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Scanner;
 import java.util.zip.ZipEntry;
@@ -23,7 +25,6 @@ import javafx.scene.image.ImageView;
 
 import org.apache.bcel.classfile.ClassParser;
 import org.apache.bcel.classfile.JavaClass;
-import org.apache.bcel.classfile.Method;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -55,8 +56,9 @@ public class ArchiveModel {
 	private HashSet<String> binarySuffixMap = new HashSet<>();
 	private HashSet<String> archiveSuffixMap = new HashSet<>();
 	private HashSet<String> textSuffixMap = new HashSet<>();
+
 	public ArchiveModel(ResourceBundle resources) {
-		
+
 		this.resources = resources;
 		iconManager = new IconManager();
 		openStreamList = new ArrayList<>();
@@ -82,6 +84,7 @@ public class ArchiveModel {
 		binarySuffixMap.add(".gif");
 		binarySuffixMap.add(".ttf");
 	}
+
 	public void clear() throws IOException {
 
 		archiveFile = null;
@@ -128,23 +131,28 @@ public class ArchiveModel {
 		return path;
 	}
 
-	public TreeItem<ZipTreeValue> scanArchive(IVisitor<String> visitor) throws IOException {
+	public TreeItem<ZipTreeValue> scanArchive(IVisitor<String> visitor)
+			throws IOException {
 
 		if (archiveFile == null) {
-			throw new IllegalStateException(resources.getString("key.archive_undefined"));
+			throw new IllegalStateException(
+					resources.getString("key.archive_undefined"));
 		}
 
 		openStreamList.clear();
 		openScannerList.clear();
 
-		searchEngine.newDirectory();		
+		searchEngine.newDirectory();
 		ScanContext scanContext = new ScanContext();
-		IndexWriterConfig config = new IndexWriterConfig(searchEngine.getAnalyzer());
-		scanContext.indexWriter = new IndexWriter(searchEngine.getDirectory(), config);
-		
+		IndexWriterConfig config = new IndexWriterConfig(
+				searchEngine.getAnalyzer());
+		scanContext.indexWriter = new IndexWriter(searchEngine.getDirectory(),
+				config);
+
 		try (FileInputStream fis = new FileInputStream(archiveFile);) {
 
-			treeRoot = new TreeItem<ZipTreeValue>(new ZipTreeValue(archiveFile.getName()));
+			treeRoot = new TreeItem<ZipTreeValue>(new ZipTreeValue(
+					archiveFile.getName()));
 			treeRoot.setGraphic(new ImageView(iconManager.getRootIcon()));
 
 			scanContext.visitor = visitor;
@@ -176,7 +184,8 @@ public class ArchiveModel {
 		return treeRoot;
 	}
 
-	public void scanTree(TreeItem<ZipTreeValue> treeItem, FilterTreeTask filterTreeTask) {
+	public void scanTree(TreeItem<ZipTreeValue> treeItem,
+			FilterTreeTask filterTreeTask) {
 
 		filterTreeTask.before(treeItem);
 		treeItem.getChildren().forEach(i -> {
@@ -216,10 +225,10 @@ public class ArchiveModel {
 	private String createFullyQualifiedName(TreeItem<ZipTreeValue> treeNode) {
 
 		StringBuilder buffer = new StringBuilder();
-		
+
 		buffer.append(treeNode.getValue().getName());
 		TreeItem<ZipTreeValue> parent = treeNode.getParent();
-		
+
 		while (parent != null) {
 			buffer.insert(0, '/');
 			buffer.insert(0, parent.getValue().getName());
@@ -227,44 +236,44 @@ public class ArchiveModel {
 		}
 
 		buffer.insert(0, '/');
-		
+
 		return buffer.toString();
 	}
 
-	private TreeItem<ZipTreeValue> findDirectoryNode(TreeItem<ZipTreeValue> treeParent, String name) {
+	private TreeItem<ZipTreeValue> findDirectoryNode(
+			TreeItem<ZipTreeValue> treeParent, String name) {
 
 		String[] pathTokens = name.split("/");
 
-		TreeItem<ZipTreeValue> dirItem = treeParent;
+		final ArrayList<TreeItem<ZipTreeValue>> dirItemList = new ArrayList<>();
+		dirItemList.add(treeParent);
+		
+		Arrays.stream(pathTokens).forEach(token -> {
 
-		for (int i = 0; i < pathTokens.length - 1; i++) {
-
-			String token = pathTokens[i];
-
-			TreeItem<ZipTreeValue> foundItem = null;
-
-			for (TreeItem<ZipTreeValue> subDirItem : dirItem.getChildren()) {
-				if (token.equals(subDirItem.getValue().getName())) {
-					foundItem = subDirItem;
-					break;
-				}
-			}
-
-			if (foundItem == null) {
+			TreeItem<ZipTreeValue> dirItem = dirItemList.get(dirItemList.size() - 1);
+			
+			Optional<TreeItem<ZipTreeValue>> optionalItem = dirItem.getChildren()
+					.stream()
+					.filter(child -> token.equals(child.getValue().getName()))
+					.findFirst();
+			
+			if (optionalItem.isPresent() == false) {
 
 				ZipTreeValue zipTreeValue = new ZipTreeValue(token);
 				zipTreeValue.isDirectory(true);
 
-				foundItem = new TreeItem<ZipTreeValue>(zipTreeValue);
-				foundItem.setGraphic(new ImageView(iconManager.getFolderIcon()));
+				TreeItem<ZipTreeValue> tokenItem = new TreeItem<>(zipTreeValue);
+				tokenItem.setGraphic(new ImageView(iconManager.getFolderIcon()));
 
-				dirItem.getChildren().add(foundItem);
+				dirItem.getChildren().add(tokenItem);
+				dirItemList.add(tokenItem);
+			
+			} else {
+				dirItemList.add(optionalItem.get());				
 			}
+		});
 
-			dirItem = foundItem;
-		}
-
-		return dirItem;
+		return dirItemList.get(dirItemList.size() - 1);
 	}
 
 	private String getSuffix(String name) {
@@ -294,27 +303,26 @@ public class ArchiveModel {
 	}
 
 	private void scanClassFile(ZipInputStream zin, ZipTreeValue zipTreeValue,
-			Document doc) throws IOException,
-			FileNotFoundException {
-		
+			Document doc) throws IOException, FileNotFoundException {
+
 		File tempFile = File.createTempFile("Mimir", ".class");
 		FileOutputStream fos = new FileOutputStream(tempFile);
 		IOUtils.copy(zin, fos);
 		IOUtils.closeQuietly(fos);
-		
+
 		ClassParser classParser = new ClassParser(tempFile.getCanonicalPath());
 		JavaClass javaClass = classParser.parse();
 
-		for (Method method : javaClass.getMethods()) {
-			doc.add(new Field("method", method.getName(), TextField.TYPE_STORED));
-		}
-		
+		Arrays.stream(javaClass.getMethods()).forEach(
+				method -> doc.add(new Field("method", method.getName(),
+						TextField.TYPE_STORED)));
+
 		zipTreeValue.setContent(javaClass.toString());
 		tempFile.delete();
 	}
 
-	private void scanZip(InputStream in, TreeItem<ZipTreeValue> treeParent, ScanContext scanContext)
-			throws IOException {
+	private void scanZip(InputStream in, TreeItem<ZipTreeValue> treeParent,
+			ScanContext scanContext) throws IOException {
 
 		ZipInputStream zin = new ZipInputStream(in);
 		openStreamList.add(zin);
@@ -330,7 +338,7 @@ public class ArchiveModel {
 			if (scanContext.visitor.isCancelled()) {
 				return;
 			}
-			
+
 			treeParent.getValue().isDirectory(true);
 
 			String name = entry.getName();
@@ -341,25 +349,29 @@ public class ArchiveModel {
 
 				try {
 
-					TreeItem<ZipTreeValue> treeDirectory = findDirectoryNode(treeParent, name);
+					TreeItem<ZipTreeValue> treeDirectory = findDirectoryNode(
+							treeParent, name);
 
 					ZipTreeValue zipTreeValue = new ZipTreeValue(entry);
 					zipTreeValue.isDirectory(false);
 
-					TreeItem<ZipTreeValue> treeChild = new TreeItem<ZipTreeValue>(zipTreeValue);
+					TreeItem<ZipTreeValue> treeChild = new TreeItem<ZipTreeValue>(
+							zipTreeValue);
 					treeDirectory.getChildren().add(treeChild);
 
-					zipTreeValue.setFullyQualifiedName(createFullyQualifiedName(treeChild));
-					
+					zipTreeValue
+							.setFullyQualifiedName(createFullyQualifiedName(treeChild));
+
 					String suffix = getSuffix(name.toLowerCase());
-					
+
 					Document doc = new Document();
-					doc.add(new Field("name", zipTreeValue.getFullyQualifiedName(), TextField.TYPE_STORED));
+					doc.add(new Field("name", zipTreeValue
+							.getFullyQualifiedName(), TextField.TYPE_STORED));
 
 					if (suffix.equals(".class")) {
-						
+
 						scanClassFile(zin, zipTreeValue, doc);
-						
+
 					} else if (textSuffixMap.contains(suffix)) {
 
 						Scanner sc = new Scanner(zin, identifyCharset(name));
@@ -374,10 +386,10 @@ public class ArchiveModel {
 
 					} else {
 
-						if (archiveSuffixMap.contains(suffix) == false 
-							&& binarySuffixMap.contains(suffix) == false) {
-							
-							StringWriter buffer= new StringWriter();
+						if (archiveSuffixMap.contains(suffix) == false
+								&& binarySuffixMap.contains(suffix) == false) {
+
+							StringWriter buffer = new StringWriter();
 							IOUtils.copy(zin, buffer, "UTF-8");
 							IOUtils.closeQuietly(buffer);
 							zipTreeValue.setContent(buffer.toString());
@@ -386,8 +398,9 @@ public class ArchiveModel {
 
 					FieldType ftype = TextField.TYPE_STORED;
 					// ftype.setStoreTermVectors(true);
-					
-					doc.add(new Field("content", zipTreeValue.getContent(), ftype));
+
+					doc.add(new Field("content", zipTreeValue.getContent(),
+							ftype));
 
 					scanContext.indexWriter.addDocument(doc);
 					scanZip(zin, treeChild, scanContext);

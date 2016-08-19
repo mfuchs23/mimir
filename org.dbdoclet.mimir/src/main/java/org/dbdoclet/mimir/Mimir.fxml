@@ -111,7 +111,7 @@
           </graphic>
         </Button>
         <Separator orientation="VERTICAL" />
-        <Button mnemonicParsing="false" onAction="#onSearch">
+        <Button mnemonicParsing="false" onAction="#onSelectSearchTab">
           <graphic>
             <ImageView fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true">
               <image>
@@ -190,10 +190,10 @@
                   <children>
                     <TabPane fx:id="tabPane" layoutX="74.0" layoutY="58.0" prefHeight="200.0" prefWidth="200.0" tabClosingPolicy="UNAVAILABLE" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                       <tabs>
-                        <Tab id="sys:search" text="%key.search">
+                        <Tab id="sys:search" fx:id="searchTab" text="%key.search">
                           <content>
-                                          <ScrollPane fitToHeight="true" fitToWidth="true">
-                                             <content>
+								<ScrollPane fitToHeight="true" fitToWidth="true">
+                               <content>
                                 <VBox>
                                   <children>
                                     <HBox alignment="CENTER" fillHeight="false" spacing="5.0">
