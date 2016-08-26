@@ -228,7 +228,7 @@
                                         </TableColumn>
                                         <TableColumn fx:id="searchHitCol" maxWidth="1.7976931348623157E308" minWidth="-Infinity" prefWidth="680.0" text="%key.hit">
                                           <cellValueFactory>
-                                                                  <PropertyValueFactory property="fileName" />
+                                                                  <PropertyValueFactory property="content" />
                                                                </cellValueFactory>
                                         </TableColumn>
                                       </columns>

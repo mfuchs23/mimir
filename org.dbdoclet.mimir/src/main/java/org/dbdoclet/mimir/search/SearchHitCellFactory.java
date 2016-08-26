@@ -9,16 +9,17 @@ import javafx.util.Callback;
 import org.dbdoclet.mimir.view.WebViewRegion;
 
 public class SearchHitCellFactory implements
-		Callback<TableColumn<SearchHit, String>, TableCell<SearchHit, String>> {
+		Callback<TableColumn<SearchHit, SearchHit.Data>, TableCell<SearchHit, SearchHit.Data>> {
 
 	@Override
-	public TableCell<SearchHit, String> call(TableColumn<SearchHit, String> param) {
-		
-		TableCell<SearchHit, String> cell = new TableCell<SearchHit, String>()  {
-			
+	public TableCell<SearchHit, SearchHit.Data> call(
+			TableColumn<SearchHit, SearchHit.Data> param) {
+
+		TableCell<SearchHit, SearchHit.Data> cell = new TableCell<SearchHit, SearchHit.Data>() {
+
 			@Override
-			public void updateItem(String item, boolean empty) {
-				
+			public void updateItem(SearchHit.Data item, boolean empty) {
+
 				if (item != null) {
 					VBox vb = new VBox();
 					vb.setAlignment(Pos.CENTER);
@@ -28,7 +29,7 @@ public class SearchHitCellFactory implements
 				}
 			}
 		};
-		
+
 		return cell;
 	}
 

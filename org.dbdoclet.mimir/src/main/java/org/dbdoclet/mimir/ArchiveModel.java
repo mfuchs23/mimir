@@ -1,5 +1,6 @@
 package org.dbdoclet.mimir;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -26,6 +27,8 @@ import javafx.scene.image.ImageView;
 import org.apache.bcel.classfile.ClassParser;
 import org.apache.bcel.classfile.JavaClass;
 import org.apache.commons.io.IOUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -36,8 +39,13 @@ import org.dbdoclet.mimir.search.SearchEngine;
 import org.dbdoclet.mimir.task.FilterTreeTask;
 import org.dbdoclet.mimir.tree.ZipTreeValue;
 
+import com.sun.tools.javap.JavapTask;
+import com.sun.tools.javap.JavapTask.BadArgs;
+
 public class ArchiveModel {
 
+	private static final Logger log = LogManager.getLogger(ArchiveModel.class);
+	
 	class ScanContext {
 		public IVisitor<String> visitor;
 		public IndexWriter indexWriter;
@@ -244,11 +252,13 @@ public class ArchiveModel {
 			TreeItem<ZipTreeValue> treeParent, String name) {
 
 		String[] pathTokens = name.split("/");
-
+		
 		final ArrayList<TreeItem<ZipTreeValue>> dirItemList = new ArrayList<>();
 		dirItemList.add(treeParent);
 		
-		Arrays.stream(pathTokens).forEach(token -> {
+		Arrays.stream(pathTokens)
+			.limit(pathTokens.length - 1)
+			.forEach(token -> {
 
 			TreeItem<ZipTreeValue> dirItem = dirItemList.get(dirItemList.size() - 1);
 			
@@ -317,6 +327,22 @@ public class ArchiveModel {
 				method -> doc.add(new Field("method", method.getName(),
 						TextField.TYPE_STORED)));
 
+		/*
+		String byteCodeString = "";
+		
+		try (ByteArrayOutputStream baos = new ByteArrayOutputStream(65536)) {
+			
+			JavapTask javap = new JavapTask();
+			javap.setLog(baos);
+			javap.handleOptions(new String[] {"-c", tempFile.getAbsolutePath()});
+			javap.call();
+			byteCodeString = baos.toString();
+			
+		} catch (BadArgs e) {
+			log.error("javap call failed", e);
+		}
+		*/
+		
 		zipTreeValue.setContent(javaClass.toString());
 		tempFile.delete();
 	}

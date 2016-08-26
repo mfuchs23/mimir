@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
@@ -25,10 +24,8 @@ import javafx.collections.transformation.FilteredList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Cursor;
-import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.ButtonType;
@@ -53,7 +50,6 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.text.Font;
 import javafx.scene.web.WebView;
 import javafx.stage.FileChooser;
-import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 
@@ -99,7 +95,7 @@ public class MainController implements Initializable {
 	@FXML
 	private Tab searchTab;
 	@FXML
-	private TableColumn<SearchHit, String> searchHitCol;
+	private TableColumn<SearchHit, SearchHit.Data> searchHitCol;
 
 	private Stage stage;
 	private ArchiveModel archiveModel;
@@ -377,7 +373,7 @@ public class MainController implements Initializable {
 		}
 		
 		removeOld.forEach(item -> menu.getItems().remove(item));
-
+		
 		menu.getItems().add(new SeparatorMenuItem());
 
 		recentlyUsed.getList().stream().forEach(path -> {
@@ -394,8 +390,8 @@ public class MainController implements Initializable {
 			List<Tab> removeTabList = tabPane
 					.getTabs()
 					.stream()
-					.filter(tab -> tab.getId() != null
-							&& tab.getId().startsWith("sys:") == false)
+					.filter(tab -> 
+						tab.getId() == null || tab.getId().startsWith("sys:") == false)
 					.collect(Collectors.toList());
 			tabPane.getTabs().removeAll(removeTabList);
 		}
@@ -404,6 +400,7 @@ public class MainController implements Initializable {
 	private Tab createTextTab(String name, String content) {
 
 		Tab tab = new Tab(name);
+		tab.setId(name);
 		TextArea textPane = new TextArea();
 		textPane.setEditable(false);
 		textPane.setFont(Font.font("Lucida Sans Typewriter", 13.0));

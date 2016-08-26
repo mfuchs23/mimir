@@ -78,6 +78,7 @@ public class SearchEngine {
 		return docs;
 	}
 
+	@SuppressWarnings("deprecation")
 	public ObservableList<SearchHit> search(String text) throws ParseException,
 			IOException, InvalidTokenOffsetsException {
 
@@ -110,7 +111,6 @@ public class SearchEngine {
 
 									String content = doc.get("content");
 
-									@SuppressWarnings("deprecation")
 									TokenStream tokenStream = TokenSources
 											.getAnyTokenStream(
 													searcher.getIndexReader(),
@@ -133,7 +133,8 @@ public class SearchEngine {
 									}
 
 									resultList.add(new SearchHit(idx + 1,
-											buffer.toString()));
+												buffer.toString(),
+												doc.getField("name").stringValue()));
 								
 								} catch (Exception oops) {
 									log.fatal("Couldn't process search hit!", oops);
