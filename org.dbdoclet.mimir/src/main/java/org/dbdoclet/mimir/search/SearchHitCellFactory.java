@@ -20,13 +20,15 @@ public class SearchHitCellFactory implements
 			@Override
 			public void updateItem(SearchHit.Data item, boolean empty) {
 
-				if (item != null) {
-					VBox vb = new VBox();
-					vb.setAlignment(Pos.CENTER);
+				VBox vb = new VBox();
+				vb.setAlignment(Pos.CENTER);
+				
+				if (item != null && empty == false) {
 					WebViewRegion webView = new WebViewRegion(item);
 					vb.getChildren().add(webView);
-					setGraphic(vb);
-				}
+				} 
+
+				setGraphic(vb);
 			}
 		};
 

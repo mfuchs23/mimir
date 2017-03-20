@@ -15,9 +15,25 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.controlsfx.dialog.ProgressDialog;
+import org.dbdoclet.mimir.dialog.ErrorDialog;
+import org.dbdoclet.mimir.search.SearchEngine;
+import org.dbdoclet.mimir.search.SearchFieldItem;
+import org.dbdoclet.mimir.search.SearchHit;
+import org.dbdoclet.mimir.search.SearchHitCellFactory;
+import org.dbdoclet.mimir.tab.TreeItemTab;
+import org.dbdoclet.mimir.task.DuplicateReportTask;
+import org.dbdoclet.mimir.task.FilterTreeTask;
+import org.dbdoclet.mimir.task.RegexFilterTreeTask;
+import org.dbdoclet.mimir.task.ScanArchiveTask;
+import org.dbdoclet.mimir.tree.ZipTreeCell;
+import org.dbdoclet.mimir.tree.ZipTreeValue;
+
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
@@ -29,6 +45,7 @@ import javafx.scene.Cursor;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.DialogPane;
 import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
@@ -43,6 +60,7 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToolBar;
+import javafx.scene.control.Tooltip;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import javafx.scene.input.MouseButton;
@@ -53,18 +71,6 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 
-import org.controlsfx.dialog.ProgressDialog;
-import org.dbdoclet.mimir.dialog.ErrorDialog;
-import org.dbdoclet.mimir.search.SearchEngine;
-import org.dbdoclet.mimir.search.SearchHit;
-import org.dbdoclet.mimir.search.SearchHitCellFactory;
-import org.dbdoclet.mimir.task.DuplicateReportTask;
-import org.dbdoclet.mimir.task.FilterTreeTask;
-import org.dbdoclet.mimir.task.RegexFilterTreeTask;
-import org.dbdoclet.mimir.task.ScanArchiveTask;
-import org.dbdoclet.mimir.tree.ZipTreeCell;
-import org.dbdoclet.mimir.tree.ZipTreeValue;
-
 /**
  * Der Controller für die JavaFX-Applikation Mimir verbindet die
  * FXML-Beschreibung der GUI mit dem Datenmodell und reagiert auf
@@ -74,38 +80,40 @@ import org.dbdoclet.mimir.tree.ZipTreeValue;
  */
 public class MainController implements Initializable {
 
+	private ArchiveModel archiveModel;
 	@FXML
-	private MenuBar menuBar;
-	@FXML
-	private ToolBar toolBar;
-	@FXML
-	private TabPane tabPane;
-	@FXML
-	private TreeView<ZipTreeValue> treeView;
-	@FXML
-	private TextField searchPattern;
+	private Label archivePath;
+	private ExceptionHandler exceptionHandler;
+	private FileChooser fileChooser = new FileChooser();
+	private StringProperty fileNameProperty = new SimpleStringProperty();
 	@FXML
 	private TextField filterPattern;
 	@FXML
-	private WebView reportView;
+	private MenuBar menuBar;
+	private RecentlyUsed recentlyUsed = new RecentlyUsed();
 	@FXML
-	private Label archivePath;
+	private WebView reportView;
+	private ResourceBundle resources;
+	private SearchEngine searchEngine;
+
+	@FXML
+	private TableColumn<SearchHit, SearchHit.Data> searchHitCol;
 	@FXML
 	private TableView<SearchHit> searchHits;
 	@FXML
-	private Tab searchTab;
+	private TextField searchPattern;
 	@FXML
-	private TableColumn<SearchHit, SearchHit.Data> searchHitCol;
-
+	private ComboBox<SearchFieldItem> searchField;
+	@FXML
+	private Tab searchTab;
 	private Stage stage;
-	private ArchiveModel archiveModel;
-	private SearchEngine searchEngine;
-	private ExceptionHandler exceptionHandler;
-	private FileChooser fileChooser = new FileChooser();
-	private RecentlyUsed recentlyUsed = new RecentlyUsed();
-	private ResourceBundle resources;
+	@FXML
+	private TabPane tabPane;
+	@FXML
+	private ToolBar toolBar;
+	@FXML
+	private TreeView<ZipTreeValue> treeView;
 	private MimirWatcher watcher;
-	private StringProperty fileNameProperty = new SimpleStringProperty();
 
 	// private URL location;
 
@@ -141,6 +149,27 @@ public class MainController implements Initializable {
 				resources));
 		treeView.setOnMouseClicked(e -> onTreeDoubleClick(e));
 
+		tabPane.getSelectionModel().selectedItemProperty()
+				.addListener(new ChangeListener<Tab>() {
+					@Override
+					public void changed(
+							ObservableValue<? extends Tab> observable,
+							Tab oldTab, Tab newTab) {
+
+						if (newTab instanceof TreeItemTab) {
+							treeView.getSelectionModel().select(
+									(((TreeItemTab) newTab).getTreeItem()));
+						}
+					}
+				});
+
+		ObservableList<SearchFieldItem> searchFieldItemList = FXCollections.observableArrayList();
+		searchFieldItemList.add(new SearchFieldItem("Klassen", "content"));
+		searchFieldItemList.add(new SearchFieldItem("Methoden", "method"));
+		searchFieldItemList.add(new SearchFieldItem("Statische Variablen", "static"));
+		searchField.setItems(searchFieldItemList);
+		searchField.setValue(searchFieldItemList.get(0));
+		
 		if (recentlyUsed.getMostRecentlyUsed() != null) {
 			try {
 				openArchive(recentlyUsed.getMostRecentlyUsed().toFile());
@@ -150,6 +179,11 @@ public class MainController implements Initializable {
 		}
 
 		initSearchTableView();
+	}
+
+	@FXML
+	public void onChangeCursor(ActionEvent event) {
+		stage.getScene().setCursor(Cursor.HAND);
 	}
 
 	@FXML
@@ -275,10 +309,11 @@ public class MainController implements Initializable {
 				return;
 			}
 
-			ObservableList<SearchHit> hits = searchEngine.search(searchPattern
-					.getText());
-			searchHits.setItems(hits);
-
+			
+			ObservableList<SearchHit> itemList = searchHits.getItems();
+			itemList.removeAll(itemList);
+			searchEngine.search(searchField.getValue().getValue(), searchPattern.getText(), itemList);
+			
 		} catch (Exception e) {
 			new ExceptionHandler().showDialog(e);
 		}
@@ -371,9 +406,9 @@ public class MainController implements Initializable {
 				sepFound = true;
 			}
 		}
-		
+
 		removeOld.forEach(item -> menu.getItems().remove(item));
-		
+
 		menu.getItems().add(new SeparatorMenuItem());
 
 		recentlyUsed.getList().stream().forEach(path -> {
@@ -390,22 +425,30 @@ public class MainController implements Initializable {
 			List<Tab> removeTabList = tabPane
 					.getTabs()
 					.stream()
-					.filter(tab -> 
-						tab.getId() == null || tab.getId().startsWith("sys:") == false)
+					.filter(tab -> tab.getId() == null
+							|| tab.getId().startsWith("sys:") == false)
 					.collect(Collectors.toList());
 			tabPane.getTabs().removeAll(removeTabList);
 		}
 	}
 
-	private Tab createTextTab(String name, String content) {
+	private Tab createTextTab(TreeItem<ZipTreeValue> treeItem) {
 
-		Tab tab = new Tab(name);
-		tab.setId(name);
+		if (treeItem == null || treeItem.getValue() == null) {
+			return null;
+		}
+
+		TreeItemTab tab = new TreeItemTab(treeItem);
+		ZipTreeValue value = treeItem.getValue();
+		tab.setText(value.getName());
+		tab.setId(value.getName());
+		tab.setTooltip(new Tooltip(value.getFullyQualifiedName()));
 		TextArea textPane = new TextArea();
 		textPane.setEditable(false);
 		textPane.setFont(Font.font("Lucida Sans Typewriter", 13.0));
-		textPane.setText(content);
+		textPane.setText(value.getContent());
 		tab.setContent(textPane);
+
 		return tab;
 	}
 
@@ -463,14 +506,17 @@ public class MainController implements Initializable {
 				return;
 			}
 
-			String content = value.getContent();
-
 			FilteredList<Tab> tabList = tabPane.getTabs().filtered(
-					t -> t.getText().equals(value.getName()));
+					tab -> {
+						if (tab.getTooltip() != null) {
+							return tab.getTooltip().getText().equals(value.getFullyQualifiedName()); 
+						} else {
+							return false;
+						}
+					});
 
 			if (tabList.size() == 0) {
-				tabPane.getTabs().add(0,
-						createTextTab(value.getName(), content));
+				tabPane.getTabs().add(0, createTextTab(selectedItem));
 				tabPane.getSelectionModel().select(0);
 			} else {
 				tabPane.getSelectionModel().select(tabList.get(0));
@@ -519,6 +565,9 @@ public class MainController implements Initializable {
 		treeRoot.setExpanded(true);
 		treeView.setRoot(treeRoot);
 
+		ObservableList<SearchHit> items = searchHits.getItems();
+		items.removeAll(items);
+		
 		watcher.register(archiveModel.getArchiveFile());
 	}
 
@@ -552,11 +601,6 @@ public class MainController implements Initializable {
 
 		tabPane.getSelectionModel().select(selectedIndex);
 		return searchTab;
-	}
-
-	@FXML
-	void onChangeCursor(ActionEvent event) {
-		stage.getScene().setCursor(Cursor.HAND);
 	}
 
 }

@@ -6,9 +6,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
@@ -30,6 +27,8 @@ import org.apache.lucene.search.highlight.TextFragment;
 import org.apache.lucene.search.highlight.TokenSources;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+
+import javafx.collections.ObservableList;
 
 public class SearchEngine {
 
@@ -79,15 +78,13 @@ public class SearchEngine {
 	}
 
 	@SuppressWarnings("deprecation")
-	public ObservableList<SearchHit> search(String text) throws ParseException,
+	public void search(String field, String text, ObservableList<SearchHit> resultList) throws ParseException,
 			IOException, InvalidTokenOffsetsException {
 
-		ObservableList<SearchHit> resultList = FXCollections
-				.observableArrayList();
 		
 		if (text.trim().length() > 0 && text.equals("*") == false) {
 
-			Query query = createQuery("content", text);
+			Query query = createQuery(field, text);
 
 			SimpleHTMLFormatter htmlFormatter = new SimpleHTMLFormatter();
 			Highlighter highlighter = new Highlighter(htmlFormatter,
@@ -143,8 +140,6 @@ public class SearchEngine {
 
 							});
 		}
-
-		return resultList;
 	}
 
 	private Object applyFragStyle(String html) {
